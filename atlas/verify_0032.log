@@ -6,3 +6,61 @@ val_loss @50 steps (long-conv): 3.8411
 ALL CHECKS PASSED
 ========== TAREFA 1: BASELINE 3 seeds @8000 ==========
 === BASELINE seed=42 steps=8000 start=2026-07-05T19:29:27Z ===
+val_loss 1.625087171792984 wall 159.283837556839
+end=2026-07-05T19:32:08Z elapsed=161s
+=== BASELINE seed=1337 steps=8000 start=2026-07-05T19:32:08Z ===
+val_loss 1.6116749405860902 wall 163.02889776229858
+end=2026-07-05T19:34:53Z elapsed=165s
+=== BASELINE seed=7 steps=8000 start=2026-07-05T19:34:53Z ===
+val_loss 1.6222489416599273 wall 161.92495393753052
+end=2026-07-05T19:37:36Z elapsed=163s
+========== TAREFA 2: ATL-0032 3 seeds @2760 ==========
+=== GENE ATL-0032-timequal seed=42 steps=2760 start=2026-07-05T19:37:36Z ===
+val_loss 1.824119222164154 wall 39.17743945121765
+end=2026-07-05T19:38:16Z elapsed=40s
+=== GENE ATL-0032-timequal seed=1337 steps=2760 start=2026-07-05T19:38:16Z ===
+val_loss 1.764960253238678 wall 37.56079387664795
+end=2026-07-05T19:38:55Z elapsed=39s
+=== GENE ATL-0032-timequal seed=7 steps=2760 start=2026-07-05T19:38:55Z ===
+val_loss 1.8014538288116455 wall 40.45536398887634
+end=2026-07-05T19:39:37Z elapsed=42s
+========== TAREFA 4: ABLAÇÃO attn+signlion @8000 ==========
+=== GENE ablation-attn-signlion seed=42 steps=8000 start=2026-07-05T19:39:37Z ===
+val_loss 1.7746014773845673 wall 241.22283482551575
+end=2026-07-05T19:43:40Z elapsed=243s
+=== GENE ablation-attn-signlion seed=1337 steps=8000 start=2026-07-05T19:43:40Z ===
+val_loss 1.6445548951625824 wall 161.46678042411804
+end=2026-07-05T19:46:23Z elapsed=163s
+=== GENE ablation-attn-signlion seed=7 steps=8000 start=2026-07-05T19:46:23Z ===
+val_loss 1.648817539215088 wall 147.5865180492401
+end=2026-07-05T19:48:52Z elapsed=149s
+========== TAREFA 5: ABLAÇÃO conv+adamw @2760 ==========
+=== GENE ablation-conv-adamw seed=42 steps=2760 start=2026-07-05T19:48:52Z ===
+val_loss 2.0217245280742646 wall 40.305063009262085
+end=2026-07-05T19:49:34Z elapsed=42s
+=== GENE ablation-conv-adamw seed=1337 steps=2760 start=2026-07-05T19:49:34Z ===
+val_loss 2.0006429076194765 wall 39.01336741447449
+end=2026-07-05T19:50:14Z elapsed=40s
+=== GENE ablation-conv-adamw seed=7 steps=2760 start=2026-07-05T19:50:14Z ===
+val_loss 2.030730867385864 wall 38.544233083724976
+end=2026-07-05T19:50:54Z elapsed=40s
+========== TAREFA 6: block_size=256 time-equal ==========
+=== BASELINE seed=42 steps=500 start=2026-07-05T19:50:54Z ===
+val_loss 2.6676147103309633 wall 101.02499008178711
+end=2026-07-05T19:52:37Z elapsed=103s
+=== BASELINE seed=1337 steps=500 start=2026-07-05T19:52:37Z ===
+val_loss 2.663308548927307 wall 98.0501549243927
+end=2026-07-05T19:54:17Z elapsed=100s
+=== BASELINE seed=7 steps=500 start=2026-07-05T19:54:17Z ===
+val_loss 2.666013705730438 wall 98.20785427093506
+end=2026-07-05T19:55:57Z elapsed=100s
+=== GENE ATL-0032-b256 seed=42 steps=250 start=2026-07-05T19:55:57Z ===
+val_loss 2.7919137954711912 wall 12.65282678604126
+end=2026-07-05T19:56:11Z elapsed=14s
+=== GENE ATL-0032-b256 seed=1337 steps=250 start=2026-07-05T19:56:11Z ===
+val_loss 2.7708786606788633 wall 12.368039608001709
+end=2026-07-05T19:56:25Z elapsed=14s
+=== GENE ATL-0032-b256 seed=7 steps=250 start=2026-07-05T19:56:25Z ===
+val_loss 2.8191259145736693 wall 11.523399591445923
+end=2026-07-05T19:56:38Z elapsed=13s
+========== ATL-0032 VERIFICATION DONE 2026-07-05T19:56:38Z ==========

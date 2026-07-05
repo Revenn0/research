@@ -30,7 +30,7 @@ def parse_args() -> LMTrainConfig:
     p.add_argument("--activation", default="gelu")
     p.add_argument("--optimizer", default="signlion")
     p.add_argument("--schedule", default="cosine-warmup")
-    p.add_argument("--lr", type=float, default=3e-3)
+    p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--warmup_steps", type=int, default=200)
     p.add_argument("--data_path", default="atlas/data/tinyshakespeare.txt")
     args = p.parse_args()

@@ -25,7 +25,7 @@ def parse_args() -> LMTrainConfig:
     p.add_argument("--block_size", type=int, default=64)
     p.add_argument("--batch", type=int, default=16)
     p.add_argument("--dropout", type=float, default=0.1)
-    p.add_argument("--lr", type=float, default=3e-3)
+    p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--data_path", default="atlas/data/tinyshakespeare.txt")
     args = p.parse_args()
     return LMTrainConfig(
