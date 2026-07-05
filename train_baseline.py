@@ -38,7 +38,7 @@ class TrainConfig:
     activation: str = "relu"  # relu | gelu | silu | spatial_gate_relu | signed_sqrt | variance_gated_relu
     norm: str = "none"  # none | batchnorm | layernorm | rms_free
     mixing: str = "none"  # none | local_blend | local_blend_k5 | multi_scale_blend | tri_scale_blend | cosine_gate_blend | entropy_gate_blend | post_act_blend | cascade_blend
-    arch: str = "cnn"  # cnn | vit
+    arch: str = "cnn"  # cnn | vit | hybrid_blend
     vit_dim: int = 64
     vit_depth: int = 2
     vit_heads: int = 4
@@ -47,6 +47,11 @@ class TrainConfig:
     ema_decay: float = 0.0
     mixup_alpha: float = 0.0
     cutout_size: int = 0
+    # escala H100
+    device: str = "auto"  # auto | cpu | cuda
+    amp: bool = False  # bf16 autocast (GPU)
+    width_mult: float = 1.0  # multiplica canais do SmallCNN (baselines maiores)
+    compile: bool = False  # torch.compile
     data_dir: str = "./data"
     num_workers: int = 0
     log_every: int = 200
@@ -341,13 +346,47 @@ class TinyViT(nn.Module):
         return self.head(self.norm(x).mean(dim=1))
 
 
+class HybridBlendNet(nn.Module):
+    """NOVEL revolucionário: CNN multi-scale spatial blend + TokenBlend sobre tokens espaciais.
+
+    Fusão de duas descobertas ATLAS:
+    1) tri_scale/multi_scale depthwise blending (espacial, por canal)
+    2) TokenBlend O(N) sobre mapa de features como sequência de tokens (7x7=49)
+
+    Diferença vs ViT: features CNN ricas antes do token mixing.
+    Diferença vs CNN puro: mixing global entre posições espaciais sem self-attention O(N²).
+    """
+
+    def __init__(self, cfg: TrainConfig) -> None:
+        super().__init__()
+        c1, c2 = 32, 64
+        mix = cfg.mixing if cfg.mixing != "none" else "tri_scale_blend"
+        self.conv1 = nn.Conv2d(1, c1, 3, padding=1)
+        self.conv2 = nn.Conv2d(c1, c2, 3, padding=1)
+        self.pool = nn.MaxPool2d(2)
+        self.mix1 = make_mixing(mix, c1)
+        self.mix2 = make_mixing(mix, c2)
+        self.token_mix = TokenBlendMS(c2)
+        self.norm_tok = nn.LayerNorm(c2)
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.fc = nn.Linear(c2, 10)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.pool(F.relu(self.mix1(self.conv1(x))))
+        x = self.pool(F.relu(self.mix2(self.conv2(x))))  # (B, 64, 7, 7)
+        tokens = x.flatten(2).transpose(1, 2)  # (B, 49, 64)
+        tokens = tokens + self.token_mix(self.norm_tok(tokens))
+        x = self.dropout(tokens.mean(dim=1))
+        return self.fc(x)
+
+
 class SmallCNN(nn.Module):
     def __init__(self, cfg: TrainConfig) -> None:
         super().__init__()
         self.activation_name = cfg.activation
         self.mixing_name = cfg.mixing
         use_builtin_act = cfg.activation in ("relu", "gelu", "silu")
-        c1, c2 = 32, 64
+        c1, c2 = int(32 * cfg.width_mult), int(64 * cfg.width_mult)
         self.conv1 = nn.Conv2d(1, c1, 3, padding=1)
         self.conv2 = nn.Conv2d(c1, c2, 3, padding=1)
         self.pool = nn.MaxPool2d(2)
@@ -457,8 +496,11 @@ def build_loaders(cfg: TrainConfig) -> tuple[DataLoader, DataLoader]:
     tfm = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.2860,), (0.3530,))])
     train_ds = datasets.FashionMNIST(cfg.data_dir, train=True, download=True, transform=tfm)
     val_ds = datasets.FashionMNIST(cfg.data_dir, train=False, download=True, transform=tfm)
-    train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
-    val_loader = DataLoader(val_ds, batch_size=512, shuffle=False, num_workers=cfg.num_workers)
+    pin = resolve_device(cfg.device).type == "cuda"
+    train_loader = DataLoader(
+        train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers, pin_memory=pin
+    )
+    val_loader = DataLoader(val_ds, batch_size=1024, shuffle=False, num_workers=cfg.num_workers, pin_memory=pin)
     return train_loader, val_loader
 
 
@@ -515,14 +557,30 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> tupl
 def build_model(cfg: TrainConfig) -> nn.Module:
     if cfg.arch == "vit":
         return TinyViT(cfg)
+    if cfg.arch == "hybrid_blend":
+        return HybridBlendNet(cfg)
     return SmallCNN(cfg)
+
+
+def resolve_device(name: str) -> torch.device:
+    if name == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(name)
 
 
 def train(cfg: TrainConfig) -> TrainResult:
     set_seed(cfg.seed)
-    device = torch.device("cpu")
+    device = resolve_device(cfg.device)
+    use_amp = cfg.amp and device.type == "cuda"
+    if device.type == "cuda":
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
     train_loader, val_loader = build_loaders(cfg)
     model = build_model(cfg).to(device)
+    if device.type == "cuda":
+        model = model.to(memory_format=torch.channels_last)
+    if cfg.compile:
+        model = torch.compile(model)
     optimizer = build_optimizer(model, cfg)
     norm_fb = NormFeedbackState() if cfg.optimizer == "norm_feedback" else None
     ema = EMA(model, cfg.ema_decay) if cfg.ema_decay > 0 else None
@@ -555,13 +613,14 @@ def train(cfg: TrainConfig) -> TrainResult:
             pg["lr"] = lr_at_step(cfg, step, cfg.steps)
 
         optimizer.zero_grad(set_to_none=True)
-        logits = model(x)
-        if cfg.mixup_alpha > 0:
-            loss = lam * F.cross_entropy(logits, y_a, label_smoothing=cfg.label_smoothing) + (
-                1 - lam
-            ) * F.cross_entropy(logits, y_b, label_smoothing=cfg.label_smoothing)
-        else:
-            loss = F.cross_entropy(logits, y, label_smoothing=cfg.label_smoothing)
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_amp):
+            logits = model(x)
+            if cfg.mixup_alpha > 0:
+                loss = lam * F.cross_entropy(logits, y_a, label_smoothing=cfg.label_smoothing) + (
+                    1 - lam
+                ) * F.cross_entropy(logits, y_b, label_smoothing=cfg.label_smoothing)
+            else:
+                loss = F.cross_entropy(logits, y, label_smoothing=cfg.label_smoothing)
 
         loss.backward()
         if cfg.optimizer == "grad_shrink":
@@ -620,6 +679,8 @@ def train(cfg: TrainConfig) -> TrainResult:
 def parse_args() -> TrainConfig:
     p = argparse.ArgumentParser(description="ATLAS baseline trainer")
     p.add_argument("--grad_centralize", action="store_true", default=False)
+    p.add_argument("--amp", action="store_true", default=False)
+    p.add_argument("--compile", action="store_true", default=False)
     for f_name, f_type in [
         ("seed", int),
         ("steps", int),
@@ -635,12 +696,13 @@ def parse_args() -> TrainConfig:
         ("ema_decay", float),
         ("mixup_alpha", float),
         ("cutout_size", int),
+        ("width_mult", float),
         ("num_workers", int),
         ("log_every", int),
         ("eval_every", int),
     ]:
         p.add_argument(f"--{f_name}", type=f_type, default=getattr(TrainConfig(), f_name))
-    for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir", "arch", "vit_mixer"]:
+    for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir", "arch", "vit_mixer", "device"]:
         p.add_argument(f"--{f_name}", type=str, default=getattr(TrainConfig(), f_name))
     for f_name in ["vit_dim", "vit_depth", "vit_heads"]:
         p.add_argument(f"--{f_name}", type=int, default=getattr(TrainConfig(), f_name))
