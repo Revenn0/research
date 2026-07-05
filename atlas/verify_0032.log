@@ -1,0 +1,8 @@
+========== TAREFA 3: BUG CHECKS ==========
+OK vocab: size=65, shared stoi
+random_batch global unique ratio: 5.3% (per-seq mean 37.2%)
+consecutive_batch global unique ratio (buggy): 2.9%
+val_loss @50 steps (long-conv): 3.8411
+ALL CHECKS PASSED
+========== TAREFA 1: BASELINE 3 seeds @8000 ==========
+=== BASELINE seed=42 steps=8000 start=2026-07-05T19:29:27Z ===
