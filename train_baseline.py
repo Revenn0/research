@@ -37,7 +37,7 @@ class TrainConfig:
     scheduler: str = "none"  # none | cosine | sqrt
     activation: str = "relu"  # relu | gelu | silu | spatial_gate_relu | signed_sqrt | variance_gated_relu
     norm: str = "none"  # none | batchnorm | layernorm | rms_free
-    mixing: str = "none"  # none | local_blend | local_blend_var | local_blend_k5 | laplacian_blend | dual_gate_blend
+    mixing: str = "none"  # none | local_blend | local_blend_k5 | multi_scale_blend | cosine_gate_blend | entropy_gate_blend | post_act_blend
     init_scale: float = 1.0
     ema_decay: float = 0.0
     mixup_alpha: float = 0.0
@@ -121,6 +121,82 @@ class LocalBlend(nn.Module):
         return gate * local + (1.0 - gate) * x
 
 
+class MultiScaleBlend(nn.Module):
+    """NOVEL: fusão paralela depthwise 3x3 + 5x5 com gate de média espacial."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.dw3 = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
+        self.dw5 = nn.Conv2d(channels, channels, 5, padding=2, groups=channels, bias=False)
+        nn.init.dirac_(self.dw3.weight)
+        nn.init.dirac_(self.dw5.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        local = 0.5 * self.dw3(x) + 0.5 * self.dw5(x)
+        gate = torch.sigmoid(x.mean(dim=(2, 3), keepdim=True))
+        return gate * local + (1.0 - gate) * x
+
+
+class CosineGateBlend(nn.Module):
+    """NOVEL: gate = sigmoid(cossim espacial entre x e conv(x)) por canal."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.dw = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
+        nn.init.dirac_(self.dw.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        local = self.dw(x)
+        dot = (x * local).sum(dim=(2, 3), keepdim=True)
+        norm = x.norm(dim=(2, 3), keepdim=True) * local.norm(dim=(2, 3), keepdim=True) + 1e-6
+        gate = torch.sigmoid(dot / norm)
+        return gate * local + (1.0 - gate) * x
+
+
+class EntropyGateBlend(nn.Module):
+    """NOVEL: gate derivado de entropia espacial da magnitude por canal."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.dw = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
+        nn.init.dirac_(self.dw.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        local = self.dw(x)
+        mag = x.abs()
+        p = mag / mag.sum(dim=(2, 3), keepdim=True).clamp(min=1e-6)
+        ent = -(p * (p + 1e-8).log()).sum(dim=(2, 3), keepdim=True)
+        gate = torch.sigmoid(ent * 2.0)
+        return gate * local + (1.0 - gate) * x
+
+
+class PostActBlend(nn.Module):
+    """NOVEL: blend APÓS ReLU — mixing no espaço de ativação."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.dw = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
+        nn.init.dirac_(self.dw.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        activated = F.relu(x)
+        local = self.dw(activated)
+        gate = torch.sigmoid(activated.mean(dim=(2, 3), keepdim=True))
+        return gate * local + (1.0 - gate) * activated
+
+
+class CascadeBlend(nn.Module):
+    """NOVEL: dois blends em série — refinamento progressivo."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.blend1 = LocalBlend(channels, kernel=3, gate_mode="mean")
+        self.blend2 = LocalBlend(channels, kernel=3, gate_mode="mean")
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blend2(self.blend1(x))
+
+
 def make_mixing(name: str, channels: int) -> nn.Module:
     if name == "local_blend":
         return LocalBlend(channels, kernel=3, gate_mode="mean")
@@ -132,6 +208,16 @@ def make_mixing(name: str, channels: int) -> nn.Module:
         return LocalBlend(channels, kernel=3, gate_mode="laplacian")
     if name == "dual_gate_blend":
         return LocalBlend(channels, kernel=3, gate_mode="dual")
+    if name == "multi_scale_blend":
+        return MultiScaleBlend(channels)
+    if name == "cosine_gate_blend":
+        return CosineGateBlend(channels)
+    if name == "entropy_gate_blend":
+        return EntropyGateBlend(channels)
+    if name == "post_act_blend":
+        return PostActBlend(channels)
+    if name == "cascade_blend":
+        return CascadeBlend(channels)
     return nn.Identity()
 
 
@@ -149,6 +235,7 @@ class SmallCNN(nn.Module):
     def __init__(self, cfg: TrainConfig) -> None:
         super().__init__()
         self.activation_name = cfg.activation
+        self.mixing_name = cfg.mixing
         use_builtin_act = cfg.activation in ("relu", "gelu", "silu")
         c1, c2 = 32, 64
         self.conv1 = nn.Conv2d(1, c1, 3, padding=1)
@@ -190,8 +277,16 @@ class SmallCNN(nn.Module):
         return apply_activation(x, self.activation_name)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.pool(self._activate(self.mix1(self.norm1(self.conv1(x)))))
-        x = self.pool(self._activate(self.mix2(self.norm2(self.conv2(x)))))
+        h1 = self.norm1(self.conv1(x))
+        if self.mixing_name == "post_act_blend":
+            x = self.pool(self.mix1(h1))
+        else:
+            x = self.pool(self._activate(self.mix1(h1)))
+        h2 = self.norm2(self.conv2(x))
+        if self.mixing_name == "post_act_blend":
+            x = self.pool(self.mix2(h2))
+        else:
+            x = self.pool(self._activate(self.mix2(h2)))
         x = x.view(x.size(0), -1)
         x = self.dropout(self._activate(self.fc_norm(self.fc1(x))))
         return self.fc2(x)

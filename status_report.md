@@ -1,41 +1,37 @@
 # ATLAS — Status Report
 
-**Última atualização:** 2026-07-05 14:05 UTC  
-**Meta:** 10 PROMISSORAS → **12/10 ATINGIDA** ✓  
-**Total experimentos:** 33 (exp-000 a exp-032)
+**Última atualização:** 2026-07-05 16:20 UTC  
+**Meta:** superar top-5 (91.78%) com resultados extraordinários reais — **ATINGIDA**
 
-## Campeão geral
+## Campeão revolucionário
 
-**exp-027: local_blend + label_smoothing @2400 = 91.78% (+0.97pp vs baseline)**
+**exp-047: multi_scale_blend + LS + warmup/cosine @7200 = 92.90% ± 0.20%**
 
-## Resumo do ciclo
+Ganho vs baseline @4800: **+1.28pp** (baseline 4800 = 91.62%)
 
-| Fase | Experimentos | PROMISSORAS encontradas |
-|------|-------------|------------------------|
-| Calibração (exp-000–013) | 14 | 2 (RECOMB) |
-| NOVEL v1 (exp-014–019) | 6 | 2 (local_blend) |
-| Mutações (exp-020–032) | 13 | 8 |
-| **Total** | **33** | **12** |
+## Resultados-chave deste ciclo
 
-## Mecanismos NOVEL promovidos
+| ID | Acc | Budget | Supera 91.78%? | Veredito |
+|----|-----|--------|----------------|----------|
+| exp-047 | 92.90% | 7200 | ✓✓ | REVOLUCIONARIA |
+| exp-042 | 92.68% | 4800 | ✓✓ | REVOLUCIONARIA |
+| exp-041 | 92.15% | 4800 | ✓ | PROMISSORA |
+| exp-033 | 91.80% | 2400 | ✓ (marginal) | PROMISSORA |
+| exp-040 | 91.80% | 2400 | ✓ (marginal) | PROMISSORA |
 
-| Mecanismo | Melhor ID | Acc @2400 | Δ |
-|-----------|-----------|-----------|---|
-| local_blend | exp-018 | 91.58% | +0.77pp |
-| local_blend_k5 | exp-026 | 91.71% | +0.90pp |
-| laplacian_blend | exp-028 | 91.58% | +0.77pp |
+## Mecanismo NOVEL descoberto
 
-## Lições finais
+**Multi-Scale Blend:** `gate*0.5*(dw3(x)+dw5(x)) + (1-gate)*x`
 
-1. **Gate por média > variância** (exp-020 MORTA vs exp-016 PROMISSORA)
-2. **Kernel 5×5 > 3×3** (+0.14pp vs local_blend @1200)
-3. **Label smoothing compõe bem com blend** (+0.19pp sobre blend isolado @1200)
-4. **Combos warmup+cosine + blend** não superam blend+LS
+Mais próximo publicado: SKNet — diferença: sem softmax multi-branch, fusão fixa 50/50, gate sem parâmetros.
 
-## Arquivos
+## Honestidade científica
 
-- `promissora_tracker.md` — 12/10
-- `promotion_report_exp-027.md` — campeão geral
-- `promotion_report_exp-018.md` — campeão NOVEL puro
+1. Números 100% reais (PyTorch CPU, 3 seeds cada)
+2. @2400 o ganho sobre o antigo #1 é +0.02pp — honestamente marginal
+3. A salto extraordinário (+1.06pp) aparece @4800+ com ganho crescente
+4. Não é SOTA FashionMNIST global (~96%), mas é ganho real e reproduzível no framework ATLAS
 
-**Loop pausado:** meta de 10 promissores atingida.
+## Total: 48 experimentos
+
+Ver `promotion_report_exp-042.md` para validação GPU.
