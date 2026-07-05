@@ -36,8 +36,8 @@ class TrainConfig:
     optimizer: str = "adam"  # adam | adamw | sgd_momentum
     scheduler: str = "none"  # none | cosine | sqrt
     activation: str = "relu"  # relu | gelu | silu | spatial_gate_relu | signed_sqrt | variance_gated_relu
-    norm: str = "none"  # none | batchnorm | layernorm
-    mixing: str = "none"  # none | local_blend
+    norm: str = "none"  # none | batchnorm | layernorm | rms_free
+    mixing: str = "none"  # none | local_blend | local_blend_var | local_blend_k5 | laplacian_blend | dual_gate_blend
     init_scale: float = 1.0
     ema_decay: float = 0.0
     mixup_alpha: float = 0.0
@@ -91,17 +91,58 @@ def apply_activation(x: torch.Tensor, name: str) -> torch.Tensor:
 
 
 class LocalBlend(nn.Module):
-    """NOVEL: mistura local depthwise com gate escalar por canal (média espacial)."""
+    """NOVEL: mistura local depthwise com gate escalar por canal."""
 
-    def __init__(self, channels: int) -> None:
+    def __init__(self, channels: int, kernel: int = 3, gate_mode: str = "mean") -> None:
         super().__init__()
-        self.dw = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
-        nn.init.dirac_(self.dw.weight)
+        pad = kernel // 2
+        self.dw = nn.Conv2d(channels, channels, kernel, padding=pad, groups=channels, bias=False)
+        if gate_mode == "laplacian":
+            w = torch.tensor([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
+            self.dw.weight.data = w.view(1, 1, 3, 3).repeat(channels, 1, 1, 1)
+        else:
+            nn.init.dirac_(self.dw.weight)
+        self.gate_mode = gate_mode
+
+    def _gate(self, x: torch.Tensor) -> torch.Tensor:
+        if self.gate_mode == "mean":
+            return torch.sigmoid(x.mean(dim=(2, 3), keepdim=True))
+        if self.gate_mode == "var":
+            return torch.sigmoid(x.var(dim=(2, 3), keepdim=True, unbiased=False) * 4.0)
+        if self.gate_mode == "dual":
+            m = x.mean(dim=(2, 3), keepdim=True)
+            v = x.var(dim=(2, 3), keepdim=True, unbiased=False)
+            return torch.sigmoid(m) * torch.sigmoid(v * 4.0)
+        return torch.sigmoid(x.mean(dim=(2, 3), keepdim=True))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         local = self.dw(x)
-        gate = torch.sigmoid(x.mean(dim=(2, 3), keepdim=True))
+        gate = self._gate(x)
         return gate * local + (1.0 - gate) * x
+
+
+def make_mixing(name: str, channels: int) -> nn.Module:
+    if name == "local_blend":
+        return LocalBlend(channels, kernel=3, gate_mode="mean")
+    if name == "local_blend_var":
+        return LocalBlend(channels, kernel=3, gate_mode="var")
+    if name == "local_blend_k5":
+        return LocalBlend(channels, kernel=5, gate_mode="mean")
+    if name == "laplacian_blend":
+        return LocalBlend(channels, kernel=3, gate_mode="laplacian")
+    if name == "dual_gate_blend":
+        return LocalBlend(channels, kernel=3, gate_mode="dual")
+    return nn.Identity()
+
+
+class RMSFree(nn.Module):
+    """NOVEL: RMS sem parâmetros afim — escala por canal."""
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 4:
+            return x
+        rms = x.pow(2).mean(dim=(2, 3), keepdim=True).sqrt().clamp(min=1e-5)
+        return x / rms
 
 
 class SmallCNN(nn.Module):
@@ -115,8 +156,8 @@ class SmallCNN(nn.Module):
         self.pool = nn.MaxPool2d(2)
         self.norm1 = self._make_norm(cfg.norm, c1)
         self.norm2 = self._make_norm(cfg.norm, c2)
-        self.mix1 = LocalBlend(c1) if cfg.mixing == "local_blend" else nn.Identity()
-        self.mix2 = LocalBlend(c2) if cfg.mixing == "local_blend" else nn.Identity()
+        self.mix1 = make_mixing(cfg.mixing, c1)
+        self.mix2 = make_mixing(cfg.mixing, c2)
         self.act = get_activation(cfg.activation)() if use_builtin_act else nn.Identity()
         self.dropout = nn.Dropout(cfg.dropout)
         flat = c2 * 7 * 7
@@ -131,6 +172,8 @@ class SmallCNN(nn.Module):
             return nn.BatchNorm2d(channels)
         if norm == "layernorm":
             return nn.GroupNorm(1, channels)
+        if norm == "rms_free":
+            return RMSFree()
         return nn.Identity()
 
     def _init_weights(self, scale: float) -> None:
@@ -222,6 +265,8 @@ def build_optimizer(model: nn.Module, cfg: TrainConfig) -> torch.optim.Optimizer
         return torch.optim.SGD(params, lr=cfg.lr, momentum=0.9, weight_decay=cfg.weight_decay, nesterov=True)
     if cfg.optimizer == "norm_feedback":
         return torch.optim.Adam(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
+    if cfg.optimizer == "grad_shrink":
+        return torch.optim.Adam(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
     return torch.optim.Adam(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
 
 
@@ -308,6 +353,10 @@ def train(cfg: TrainConfig) -> TrainResult:
             loss = F.cross_entropy(logits, y, label_smoothing=cfg.label_smoothing)
 
         loss.backward()
+        if cfg.optimizer == "grad_shrink":
+            for p in model.parameters():
+                if p.grad is not None:
+                    p.grad.data.mul_(torch.sigmoid(p.grad.data.abs()))
         if cfg.optimizer == "norm_feedback" and norm_fb is not None:
             norm_fb.scale_gradients(model)
         if cfg.grad_centralize:
