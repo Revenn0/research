@@ -39,6 +39,11 @@ UPDATES = {
     "exp-045": ("INCONCLUSIVA", "k5+LS dropout0.05 @2400: 91.69%, não supera top-5."),
     "exp-046": ("BASELINE", "Baseline @4800: 91.62±0.30%."),
     "exp-047": ("REVOLUCIONARIA", "multi_scale+LS+wc @7200: 92.90% (+1.28pp vs baseline 4800). Ganho cresce."),
+    "exp-048": ("BASELINE", "TinyViT attn @2400: 86.87%. Baseline transformer (CNN é melhor neste budget)."),
+    "exp-049": ("INCONCLUSIVA", "ViT token_blend @2400: 85.90% (−0.97pp vs attn), MAS 41% mais rápido (50 vs 35.5 sps). Compute-fair pendente."),
+    "exp-050": ("MORTA", "ViT token_blend_ms @2400: 85.55%, pior que blend simples e mais lento."),
+    "exp-051": ("PROMISSORA", "tri_scale+LS+wc @4800: 92.84±0.11% — supera exp-042 (92.68%) mas 35% mais lento (11 sps)."),
+    "exp-052": ("MORTA", "campeão+mixup @4800: 92.45%, mixup prejudica o stack."),
 }
 
 path = Path("experiments_log.jsonl")

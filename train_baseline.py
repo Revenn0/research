@@ -37,7 +37,12 @@ class TrainConfig:
     scheduler: str = "none"  # none | cosine | sqrt
     activation: str = "relu"  # relu | gelu | silu | spatial_gate_relu | signed_sqrt | variance_gated_relu
     norm: str = "none"  # none | batchnorm | layernorm | rms_free
-    mixing: str = "none"  # none | local_blend | local_blend_k5 | multi_scale_blend | cosine_gate_blend | entropy_gate_blend | post_act_blend
+    mixing: str = "none"  # none | local_blend | local_blend_k5 | multi_scale_blend | tri_scale_blend | cosine_gate_blend | entropy_gate_blend | post_act_blend | cascade_blend
+    arch: str = "cnn"  # cnn | vit
+    vit_dim: int = 64
+    vit_depth: int = 2
+    vit_heads: int = 4
+    vit_mixer: str = "attn"  # attn | token_blend | token_blend_ms
     init_scale: float = 1.0
     ema_decay: float = 0.0
     mixup_alpha: float = 0.0
@@ -137,6 +142,23 @@ class MultiScaleBlend(nn.Module):
         return gate * local + (1.0 - gate) * x
 
 
+class TriScaleBlend(nn.Module):
+    """NOVEL: fusão paralela depthwise 3x3 + 5x5 + 7x7 com gate de média espacial."""
+
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.dw3 = nn.Conv2d(channels, channels, 3, padding=1, groups=channels, bias=False)
+        self.dw5 = nn.Conv2d(channels, channels, 5, padding=2, groups=channels, bias=False)
+        self.dw7 = nn.Conv2d(channels, channels, 7, padding=3, groups=channels, bias=False)
+        for m in (self.dw3, self.dw5, self.dw7):
+            nn.init.dirac_(m.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        local = (self.dw3(x) + self.dw5(x) + self.dw7(x)) / 3.0
+        gate = torch.sigmoid(x.mean(dim=(2, 3), keepdim=True))
+        return gate * local + (1.0 - gate) * x
+
+
 class CosineGateBlend(nn.Module):
     """NOVEL: gate = sigmoid(cossim espacial entre x e conv(x)) por canal."""
 
@@ -210,6 +232,8 @@ def make_mixing(name: str, channels: int) -> nn.Module:
         return LocalBlend(channels, kernel=3, gate_mode="dual")
     if name == "multi_scale_blend":
         return MultiScaleBlend(channels)
+    if name == "tri_scale_blend":
+        return TriScaleBlend(channels)
     if name == "cosine_gate_blend":
         return CosineGateBlend(channels)
     if name == "entropy_gate_blend":
@@ -229,6 +253,92 @@ class RMSFree(nn.Module):
             return x
         rms = x.pow(2).mean(dim=(2, 3), keepdim=True).sqrt().clamp(min=1e-5)
         return x / rms
+
+
+class TokenBlend(nn.Module):
+    """NOVEL: token mixing sem atenção — blend depthwise 1D sobre tokens com gate global.
+
+    Aplica a descoberta local_blend ao espaço de tokens de um Transformer:
+    mistura local de tokens vizinhos (conv1d depthwise) + gate escalar por dim
+    derivado da média sobre tokens. Zero matrizes QKV — O(N) em vez de O(N²).
+    """
+
+    def __init__(self, dim: int, kernel: int = 3) -> None:
+        super().__init__()
+        self.dw = nn.Conv1d(dim, dim, kernel, padding=kernel // 2, groups=dim, bias=False)
+        nn.init.dirac_(self.dw.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, N, D)
+        h = x.transpose(1, 2)  # (B, D, N)
+        local = self.dw(h).transpose(1, 2)
+        gate = torch.sigmoid(x.mean(dim=1, keepdim=True))  # (B, 1, D)
+        return gate * local + (1.0 - gate) * x
+
+
+class TokenBlendMS(nn.Module):
+    """NOVEL: multi-scale token blend — kernels 3 e 5 sobre a sequência de tokens."""
+
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.dw3 = nn.Conv1d(dim, dim, 3, padding=1, groups=dim, bias=False)
+        self.dw5 = nn.Conv1d(dim, dim, 5, padding=2, groups=dim, bias=False)
+        nn.init.dirac_(self.dw3.weight)
+        nn.init.dirac_(self.dw5.weight)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = x.transpose(1, 2)
+        local = (0.5 * self.dw3(h) + 0.5 * self.dw5(h)).transpose(1, 2)
+        gate = torch.sigmoid(x.mean(dim=1, keepdim=True))
+        return gate * local + (1.0 - gate) * x
+
+
+class ViTBlock(nn.Module):
+    def __init__(self, dim: int, heads: int, mixer: str) -> None:
+        super().__init__()
+        self.norm1 = nn.LayerNorm(dim)
+        self.mixer_name = mixer
+        if mixer == "attn":
+            self.mixer = nn.MultiheadAttention(dim, heads, batch_first=True)
+        elif mixer == "token_blend":
+            self.mixer = TokenBlend(dim)
+        else:
+            self.mixer = TokenBlendMS(dim)
+        self.norm2 = nn.LayerNorm(dim)
+        self.mlp = nn.Sequential(nn.Linear(dim, dim * 4), nn.GELU(), nn.Linear(dim * 4, dim))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.norm1(x)
+        if self.mixer_name == "attn":
+            h, _ = self.mixer(h, h, h, need_weights=False)
+        else:
+            h = self.mixer(h)
+        x = x + h
+        return x + self.mlp(self.norm2(x))
+
+
+class TinyViT(nn.Module):
+    """ViT mínimo para FashionMNIST: patch 4x4, budget compatível com SmallCNN."""
+
+    def __init__(self, cfg: TrainConfig) -> None:
+        super().__init__()
+        dim = cfg.vit_dim
+        self.patch = nn.Conv2d(1, dim, 4, stride=4)  # 28->7, 49 tokens
+        n_tokens = 49
+        self.pos = nn.Parameter(torch.zeros(1, n_tokens, dim))
+        nn.init.trunc_normal_(self.pos, std=0.02)
+        self.blocks = nn.ModuleList(
+            [ViTBlock(dim, cfg.vit_heads, cfg.vit_mixer) for _ in range(cfg.vit_depth)]
+        )
+        self.norm = nn.LayerNorm(dim)
+        self.head = nn.Linear(dim, 10)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.patch(x).flatten(2).transpose(1, 2)  # (B, 49, D)
+        x = x + self.pos
+        for blk in self.blocks:
+            x = blk(x)
+        return self.head(self.norm(x).mean(dim=1))
 
 
 class SmallCNN(nn.Module):
@@ -402,11 +512,17 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> tupl
     return total_loss / total, correct / total
 
 
+def build_model(cfg: TrainConfig) -> nn.Module:
+    if cfg.arch == "vit":
+        return TinyViT(cfg)
+    return SmallCNN(cfg)
+
+
 def train(cfg: TrainConfig) -> TrainResult:
     set_seed(cfg.seed)
     device = torch.device("cpu")
     train_loader, val_loader = build_loaders(cfg)
-    model = SmallCNN(cfg).to(device)
+    model = build_model(cfg).to(device)
     optimizer = build_optimizer(model, cfg)
     norm_fb = NormFeedbackState() if cfg.optimizer == "norm_feedback" else None
     ema = EMA(model, cfg.ema_decay) if cfg.ema_decay > 0 else None
@@ -476,7 +592,7 @@ def train(cfg: TrainConfig) -> TrainResult:
         if step % cfg.eval_every == 0 or step == cfg.steps:
             eval_model = model
             if ema is not None:
-                eval_model = SmallCNN(cfg).to(device)
+                eval_model = build_model(cfg).to(device)
                 ema.copy_to(eval_model)
             vloss, vacc = evaluate(eval_model, val_loader, device)
             val_accs.append(vacc)
@@ -524,8 +640,10 @@ def parse_args() -> TrainConfig:
         ("eval_every", int),
     ]:
         p.add_argument(f"--{f_name}", type=f_type, default=getattr(TrainConfig(), f_name))
-    for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir"]:
+    for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir", "arch", "vit_mixer"]:
         p.add_argument(f"--{f_name}", type=str, default=getattr(TrainConfig(), f_name))
+    for f_name in ["vit_dim", "vit_depth", "vit_heads"]:
+        p.add_argument(f"--{f_name}", type=int, default=getattr(TrainConfig(), f_name))
     args = p.parse_args()
     return TrainConfig(**vars(args))
 
