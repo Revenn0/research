@@ -5,20 +5,12 @@ import json
 from pathlib import Path
 
 UPDATES = {
-    "exp-000": ("BASELINE", "Referência: 89.78±0.31% @1200 steps. Bem acima do acaso (10%)."),
-    "exp-001": ("MORTA", "AdamW+cosine não supera baseline neste regime CPU/CNN pequena."),
-    "exp-002": ("INCONCLUSIVA", "+0.20pp @1200; marginal @2400 (+0.08pp). Ganho dentro da incerteza."),
-    "exp-003": ("MORTA", "EMA 0.999 prejudica (-1.5pp): decay alto demais para 1200 steps."),
-    "exp-004": ("INCONCLUSIVA", "Mixup 0.2 neutro (+0.03pp), alta variância entre seeds."),
-    "exp-005": ("MORTA", "BatchNorm: -0.2pp acurácia e -30% throughput — pior custo-benefício."),
-    "exp-006": ("MORTA", "Sqrt LR decay inferior ao baseline fixo (-0.6pp)."),
-    "exp-007": ("PROMISSORA", "Warmup100+cosine: +0.29pp @1200 steps vs baseline."),
-    "exp-008": ("MORTA", "Combo LS+warmup+cosine não supera warmup+cosine isolado."),
-    "exp-009": ("MORTA", "Cutout 8 piora (-0.45pp) neste CNN pequeno."),
-    "exp-010": ("BASELINE", "Referência escalada: 90.81±0.31% @2400 steps."),
-    "exp-011": ("PROMISSORA", "Warmup+cosine mantém +0.57pp @2400 — ganho cresce com budget."),
-    "exp-012": ("MORTA", "Gradient centralization: -0.15pp, sem benefício aqui."),
-    "exp-013": ("INCONCLUSIVA", "Label smoothing @2400: +0.08pp, dentro da incerteza."),
+    "exp-014": ("MORTA", "Spatial Gate ReLU: −0.89pp @1200. Gate sem parâmetros suprime demais."),
+    "exp-015": ("MORTA", "Norm Feedback: −0.13pp @1200. Feedback global instável, sem ganho."),
+    "exp-016": ("PROMISSORA", "Local Blend NOVEL: +0.70pp @1200 vs baseline (90.48±0.38%)."),
+    "exp-017": ("MORTA", "Signed Sqrt: colapso total (10% acc, NaN loss). Ativação inviável."),
+    "exp-018": ("PROMISSORA", "Local Blend @2400: +0.77pp vs baseline (91.58±0.35%). Ganho cresce com budget."),
+    "exp-019": ("INCONCLUSIVA", "Variance Gated ReLU: +0.09pp @1200, dentro da incerteza; lento (~24 sps)."),
 }
 
 path = Path("experiments_log.jsonl")

@@ -1,61 +1,65 @@
 # ATLAS — Status Report
 
-**Última atualização:** 2026-07-05 12:20 UTC  
-**Hardware:** CPU Linux, PyTorch 2.12.1+cpu, ~41 steps/s (SmallCNN, FashionMNIST, batch=128)  
-**Experimento ativo:** ciclo inicial concluído; fila: combinações de schedule + regularização
+**Última atualização:** 2026-07-05 12:56 UTC  
+**Hardware:** CPU Linux, PyTorch 2.12.1+cpu, ~41 steps/s baseline / ~27 steps/s com local_blend  
+**Sessão:** retomada; sem daemon/background ativo  
+**Experimento ativo:** ciclo NOVEL — exp-019+ na fila
 
 ## Resumo executivo
 
-Infraestrutura ATLAS operacional com 14 experimentos reais executados. Baseline bem tunado (89.78% val acc @1200 steps, 3 seeds). **Campeão atual: warmup 100 steps + cosine LR decay** (`exp-007`/`exp-011`), com ganho consistente que **aumenta** em budget 2× (+0.57 pp absolutos vs baseline @2400 steps).
+Regra v2 aplicada: leaderboard re-classificado (NOVEL|RECOMB|CONHECIDA). **Primeiro campeão NOVEL encontrado:** Local Blend Mixing (`exp-016`/`exp-018`), +0.77pp @2400 steps vs baseline, superando também o melhor RECOMB (warmup+cosine).
 
-Nenhuma técnica genuinamente nova à literatura emergiu neste ciclo — o campeão é redescoberta de prática estabelecida (warmup + cosine). Várias hipóteses foram refutadas com lições úteis.
+Total: **19 experimentos reais** (exp-000 a exp-018).
 
-## Hardware medido
+## Re-classificação completa (exp-000 a exp-013)
 
-| Métrica | Valor |
-|---------|-------|
-| Throughput médio | 41.7 steps/s |
-| Tempo/run @1200 steps | ~29 s |
-| Tempo/run @2400 steps | ~58 s |
-| Dataset | FashionMNIST (60k train / 10k val) |
-| Modelo | SmallCNN (~200k params) |
+| Rótulo | IDs |
+|--------|-----|
+| BASELINE | exp-000, exp-010 |
+| CONHECIDA | exp-001 a exp-006, exp-009, exp-012, exp-013 |
+| RECOMB | exp-007, exp-008, exp-011 |
+| NOVEL | *(nenhum neste lote)* |
 
-## Resultados-chave (budget 1200 steps, 3 seeds)
+## Resultados NOVEL (exp-014 a exp-018)
 
-| ID | Variante | Val Acc (mean±std) | Δ vs baseline | Veredito |
-|----|----------|-------------------|---------------|----------|
-| exp-000 | baseline | 89.78±0.31% | — | BASELINE |
-| exp-007 | warmup100+cosine | **90.07±0.32%** | **+0.29pp** | PROMISSORA |
-| exp-002 | label_smoothing 0.1 | 89.98±0.18% | +0.20pp | INCONCLUSIVA |
-| exp-003 | EMA 0.999 | 88.25±0.07% | -1.53pp | MORTA |
-| exp-005 | BatchNorm | 89.58±0.67% | -0.20pp | MORTA |
+| ID | Mecanismo | Rótulo | Val Acc @1200 | Val Acc @2400 | Veredito |
+|----|-----------|--------|---------------|---------------|----------|
+| exp-014 | Spatial Gate ReLU | NOVEL | 88.89% (−0.89pp) | — | MORTA |
+| exp-015 | Norm Feedback Optimizer | NOVEL | 89.65% (−0.13pp) | — | MORTA |
+| exp-016 | Local Blend Mixing | NOVEL | **90.48% (+0.70pp)** | — | PROMISSORA |
+| exp-017 | Signed Sqrt Activation | NOVEL | 10.0% (colapso) | — | MORTA |
+| exp-018 | Local Blend (escala) | NOVEL | — | **91.58% (+0.77pp)** | PROMISSORA |
 
-## Validação de escala (2400 steps, regra 3)
+### Teste adversarial — Local Blend (campeão)
 
-| ID | Variante | Val Acc | Δ vs baseline @2400 |
-|----|----------|---------|---------------------|
-| exp-010 | baseline | 90.81±0.31% | — |
-| exp-011 | warmup+cosine | **91.38±0.14%** | **+0.57pp** |
-| exp-013 | label_smoothing | 90.89±0.07% | +0.08pp |
+- **Mais próximo:** SKNet (Li et al. 2019) — multi-kernel + softmax
+- **Defesa:** único depthwise 3×3; gate = σ(spatial_mean(x)); sem branches paralelos
+- **Veredito novidade:** NOVEL mantido
 
-O ganho do campeão **não encolheu** — cresceu proporcionalmente. Veredito PROMISSORA mantido.
+## Comparação com calibração
 
-## Lições aprendidas
+| Campeão | Rótulo | Acc @2400 | Δ baseline |
+|---------|--------|-----------|------------|
+| **exp-018 Local Blend** | **NOVEL** | **91.58%** | **+0.77pp** |
+| exp-011 warmup+cosine | RECOMB | 91.38% | +0.57pp |
+| exp-010 baseline | BASELINE | 90.81% | — |
 
-1. **EMA decay=0.999 é inadequado** para treinos curtos (<5k steps): avaliação intermediária mostra acc ~75% @400 steps.
-2. **BatchNorm degrada throughput em CPU** (~29 vs ~42 steps/s) sem ganho de acurácia.
-3. **Combos nem sempre somam**: LS + warmup + cosine (exp-008) ≤ warmup+cosine isolado.
-4. **Cutout** prejudica neste modelo pequeno — provavelmente precisa de arquitetura maior.
+## Lições do ciclo NOVEL
 
-## Próximos experimentos (fila)
+1. **Gates sem parâmetros** (exp-014) podem suprimir demais — energia relativa ≠ SE-Net.
+2. **Feedback global de norma** (exp-015) não substitui adaptação per-param do Adam.
+3. **Signed sqrt** (exp-017) causa NaN — compressão agressiva destrói gradientes.
+4. **Local blend com init dirac** (exp-016) começa ≈identidade e aprende mixing gradual — ganho robusto.
 
-- [ ] `warmup+cosine` + `label_smoothing` @2400 (combo no campeão)
-- [ ] Warmup proporcional (8% dos steps) em budgets variados
-- [ ] Patch: cosine com restart único em 50% do budget
-- [ ] Grad clip 1.0 + warmup+cosine (regularização de gradiente)
+## Próximos experimentos (fila NOVEL)
+
+- [ ] exp-019: Variance-Gated ReLU — `relu(x) * sigmoid(var_spatial(x))`
+- [ ] exp-020: Local Blend + gate de variância (mutação do campeão)
+- [ ] exp-021: Local Blend @4800 steps (re-teste escala 2× adicional)
+- [ ] Ablation: local_blend sem dirac init
 
 ## Arquivos de estado
 
-- `experiments_log.jsonl` — 14 entradas
-- `leaderboard.md` — ranking atualizado
-- `promotion_report_exp-011.md` — campeão para validação GPU
+Total: **20 experimentos** (exp-000 a exp-019).
+- `leaderboard.md` — re-classificado v2
+- `promotion_report_exp-018.md` — campeão NOVEL para GPU
