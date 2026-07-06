@@ -1,0 +1,235 @@
+========== VERIFICAÇÃO ESCALA 100M ==========
+Parâmetros: 107.51M
+OK: modelo dentro da faixa ~100M
+========== FASE 1: 12 PROMISSORAS @100M, 1000 steps ==========
+=== exp-100m-001 | exp-007 warmup+cosine ===
+{
+  "id": "exp-100m-001",
+  "name": "p007_wc_100m",
+  "timestamp_utc": "2026-07-06T08:02:17.058754+00:00",
+  "repro_command": "/usr/bin/python3 train_baseline.py --width_mult 16.0 --hidden_dim 2048 --batch_size 64 --lr 0.001 --weight_decay 1e-4 --device cpu --num_workers 2 --steps 1000 --eval_every 250 --log_every 200 --warmup_steps 100 --scheduler cosine --seed <SEED>",
+  "seeds": [
+    1000,
+    1001,
+    1002
+  ],
+  "config": {
+    "seed": 1000,
+    "steps": 1000,
+    "batch_size": 64,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "hidden_dim": 2048,
+    "dropout": 0.1,
+    "label_smoothing": 0.0,
+    "warmup_steps": 100,
+    "grad_clip": 0.0,
+    "grad_centralize": false,
+    "optimizer": "adam",
+    "scheduler": "cosine",
+    "activation": "relu",
+    "norm": "none",
+    "mixing": "none",
+    "arch": "cnn",
+    "vit_dim": 64,
+    "vit_depth": 2,
+    "vit_heads": 4,
+    "vit_mixer": "attn",
+    "init_scale": 1.0,
+    "ema_decay": 0.0,
+    "mixup_alpha": 0.0,
+    "cutout_size": 0,
+    "device": "cpu",
+    "amp": false,
+    "width_mult": 16.0,
+    "compile": false,
+    "data_dir": "./data",
+    "num_workers": 2,
+    "log_every": 200,
+    "eval_every": 250
+  },
+  "result": {
+    "n_seeds": 3,
+    "best_val_acc_mean": 0.8978333333333333,
+    "best_val_acc_std": 0.002615976554431115,
+    "wall_time_s_mean": 1221.9946243096492,
+    "steps_per_sec_mean": 0.8184155997656019,
+    "per_seed": [
+      {
+        "seed": 1000,
+        "steps": 1000,
+        "wall_time_s": 1230.5083402270102,
+        "steps_per_sec": 0.812672265037647,
+        "final_train_loss": 0.43095008082959935,
+        "final_train_acc": 0.8591170585292647,
+        "best_val_acc": 0.8975,
+        "final_val_acc": 0.8975,
+        "val_accs": [
+          0.8465,
+          0.8703,
+          0.8895,
+          0.8975
+        ],
+        "config": {
+          "seed": 1000,
+          "steps": 1000,
+          "batch_size": 64,
+          "lr": 0.001,
+          "weight_decay": 0.0001,
+          "hidden_dim": 2048,
+          "dropout": 0.1,
+          "label_smoothing": 0.0,
+          "warmup_steps": 100,
+          "grad_clip": 0.0,
+          "grad_centralize": false,
+          "optimizer": "adam",
+          "scheduler": "cosine",
+          "activation": "relu",
+          "norm": "none",
+          "mixing": "none",
+          "arch": "cnn",
+          "vit_dim": 64,
+          "vit_depth": 2,
+          "vit_heads": 4,
+          "vit_mixer": "attn",
+          "init_scale": 1.0,
+          "ema_decay": 0.0,
+          "mixup_alpha": 0.0,
+          "cutout_size": 0,
+          "device": "cpu",
+          "amp": false,
+          "width_mult": 16.0,
+          "compile": false,
+          "data_dir": "./data",
+          "num_workers": 2,
+          "log_every": 200,
+          "eval_every": 250
+        }
+      },
+      {
+        "seed": 1001,
+        "steps": 1000,
+        "wall_time_s": 1230.6543738689506,
+        "steps_per_sec": 0.8125758305771784,
+        "final_train_loss": 0.430256563598004,
+        "final_train_acc": 0.8600550275137568,
+        "best_val_acc": 0.9006,
+        "final_val_acc": 0.9006,
+        "val_accs": [
+          0.8339,
+          0.8718,
+          0.8912,
+          0.9006
+        ],
+        "config": {
+          "seed": 1001,
+          "steps": 1000,
+          "batch_size": 64,
+          "lr": 0.001,
+          "weight_decay": 0.0001,
+          "hidden_dim": 2048,
+          "dropout": 0.1,
+          "label_smoothing": 0.0,
+          "warmup_steps": 100,
+          "grad_clip": 0.0,
+          "grad_centralize": false,
+          "optimizer": "adam",
+          "scheduler": "cosine",
+          "activation": "relu",
+          "norm": "none",
+          "mixing": "none",
+          "arch": "cnn",
+          "vit_dim": 64,
+          "vit_depth": 2,
+          "vit_heads": 4,
+          "vit_mixer": "attn",
+          "init_scale": 1.0,
+          "ema_decay": 0.0,
+          "mixup_alpha": 0.0,
+          "cutout_size": 0,
+          "device": "cpu",
+          "amp": false,
+          "width_mult": 16.0,
+          "compile": false,
+          "data_dir": "./data",
+          "num_workers": 2,
+          "log_every": 200,
+          "eval_every": 250
+        }
+      },
+      {
+        "seed": 1002,
+        "steps": 1000,
+        "wall_time_s": 1204.8211588329868,
+        "steps_per_sec": 0.82999870368198,
+        "final_train_loss": 0.4324170734328947,
+        "final_train_acc": 0.8576632066033016,
+        "best_val_acc": 0.8954,
+        "final_val_acc": 0.8954,
+        "val_accs": [
+          0.8119,
+          0.8637,
+          0.8883,
+          0.8954
+        ],
+        "config": {
+          "seed": 1002,
+          "steps": 1000,
+          "batch_size": 64,
+          "lr": 0.001,
+          "weight_decay": 0.0001,
+          "hidden_dim": 2048,
+          "dropout": 0.1,
+          "label_smoothing": 0.0,
+          "warmup_steps": 100,
+          "grad_clip": 0.0,
+          "grad_centralize": false,
+          "optimizer": "adam",
+          "scheduler": "cosine",
+          "activation": "relu",
+          "norm": "none",
+          "mixing": "none",
+          "arch": "cnn",
+          "vit_dim": 64,
+          "vit_depth": 2,
+          "vit_heads": 4,
+          "vit_mixer": "attn",
+          "init_scale": 1.0,
+          "ema_decay": 0.0,
+          "mixup_alpha": 0.0,
+          "cutout_size": 0,
+          "device": "cpu",
+          "amp": false,
+          "width_mult": 16.0,
+          "compile": false,
+          "data_dir": "./data",
+          "num_workers": 2,
+          "log_every": 200,
+          "eval_every": 250
+        }
+      }
+    ]
+  },
+  "verdict": "INCONCLUSIVA",
+  "lesson": "Promissora @100M: warmup+cosine.",
+  "novelty_note": "RECOMB | promissora exp-007 @100M."
+}
+./atlas_batch_100m.sh: line 90: syntax error near unexpected token `('
+========== RETOMADA BATCH 100M ==========
+=== SKIP exp-100m-001 (já concluído) ===
+=== exp-100m-002 | exp-011 warmup+cosine ===
+Traceback (most recent call last):
+  File "/workspace/atlas_run.py", line 100, in <module>
+    main()
+  File "/workspace/atlas_run.py", line 72, in main
+    r = run_one(cmd)
+        ^^^^^^^^^^^^
+  File "/workspace/atlas_run.py", line 16, in run_one
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/python3', 'train_baseline.py', '--width_mult', '16.0', '--hidden_dim', '2048', '--batch_size', '64', '--lr', '0.001', '--weight_decay', '1e-4', '--device', 'cpu', '--num_workers', '2', '--steps', '1000', '--eval_every', '250', '--log_every', '200', '--warmup_steps', '100', '--scheduler', 'cosine', '--result_dir', 'results/100m', '--refresh_dashboard', '--seed', '1000']' returned non-zero exit status 2.
+========== RETOMADA BATCH 100M ==========
+=== SKIP exp-100m-001 (já concluído) ===
+=== exp-100m-002 | exp-011 warmup+cosine ===

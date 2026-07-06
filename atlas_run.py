@@ -68,7 +68,7 @@ def main() -> None:
         cmd = base_cmd + ["--seed", str(seed)]
         if result_dir:
             out_path = result_dir / f"{args.id}_seed{seed}.json"
-            cmd += ["--result_path", str(out_path)]
+            cmd += ["--result_path", str(out_path), "--progress_path", str(result_dir / "_live_progress.json")]
         r = run_one(cmd)
         results.append(r)
         if result_dir:

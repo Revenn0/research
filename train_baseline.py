@@ -9,6 +9,7 @@ import math
 import random
 import time
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -568,7 +569,7 @@ def resolve_device(name: str) -> torch.device:
     return torch.device(name)
 
 
-def train(cfg: TrainConfig) -> TrainResult:
+def train(cfg: TrainConfig, progress_path: str = "") -> TrainResult:
     set_seed(cfg.seed)
     device = resolve_device(cfg.device)
     use_amp = cfg.amp and device.type == "cuda"
@@ -648,6 +649,9 @@ def train(cfg: TrainConfig) -> TrainResult:
         running_total += x.size(0)
         step += 1
 
+        if progress_path and (step % 25 == 0 or step == cfg.steps):
+            _write_progress(progress_path, cfg, step, best_val_acc, val_accs)
+
         if step % cfg.eval_every == 0 or step == cfg.steps:
             eval_model = model
             if ema is not None:
@@ -676,7 +680,24 @@ def train(cfg: TrainConfig) -> TrainResult:
     )
 
 
-def parse_args() -> tuple[TrainConfig, str]:
+def _write_progress(
+    path: str, cfg: TrainConfig, step: int, best_val_acc: float, val_accs: list[float]
+) -> None:
+    payload = {
+        "seed": cfg.seed,
+        "step": step,
+        "total_steps": cfg.steps,
+        "step_pct": round(100.0 * step / max(1, cfg.steps), 1),
+        "best_val_acc": best_val_acc,
+        "last_val_acc": val_accs[-1] if val_accs else None,
+        "updated_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def parse_args() -> tuple[TrainConfig, str, str]:
     p = argparse.ArgumentParser(description="ATLAS baseline trainer")
     p.add_argument("--grad_centralize", action="store_true", default=False)
     p.add_argument("--amp", action="store_true", default=False)
@@ -703,6 +724,7 @@ def parse_args() -> tuple[TrainConfig, str]:
     ]:
         p.add_argument(f"--{f_name}", type=f_type, default=getattr(TrainConfig(), f_name))
     p.add_argument("--result_path", type=str, default="", help="opcional: grava JSON do resultado ao terminar")
+    p.add_argument("--progress_path", type=str, default="", help="opcional: grava progresso ao vivo (steps)")
     for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir", "arch", "vit_mixer", "device"]:
         p.add_argument(f"--{f_name}", type=str, default=getattr(TrainConfig(), f_name))
     for f_name in ["vit_dim", "vit_depth", "vit_heads"]:
@@ -710,12 +732,13 @@ def parse_args() -> tuple[TrainConfig, str]:
     args = p.parse_args()
     d = vars(args)
     result_path = d.pop("result_path", "")
-    return TrainConfig(**d), result_path
+    progress_path = d.pop("progress_path", "")
+    return TrainConfig(**d), result_path, progress_path
 
 
 def main() -> None:
-    cfg, result_path = parse_args()
-    result = train(cfg)
+    cfg, result_path, progress_path = parse_args()
+    result = train(cfg, progress_path=progress_path)
     payload = asdict(result)
     print(json.dumps(payload, indent=2))
     if result_path:

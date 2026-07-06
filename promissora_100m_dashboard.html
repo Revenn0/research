@@ -2,49 +2,88 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8"/>
-  <meta http-equiv="refresh" content="30"/>
   <title>ATLAS 100M — 12 Promissoras</title>
   <style>
     :root { font-family: system-ui, sans-serif; background: #0f1117; color: #e6edf3; }
-    body { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    body { max-width: 1280px; margin: 0 auto; padding: 24px; }
     h1 { font-size: 1.5rem; margin-bottom: 4px; }
-    .sub { color: #8b949e; margin-bottom: 20px; }
-    .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
-    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 14px 18px; min-width: 160px; }
-    .card b { display: block; font-size: 1.4rem; }
-    .bar { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; margin: 8px 0 20px; }
-    .bar > div { height: 100%; background: #238636; width: 0%; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-    th, td { border-bottom: 1px solid #30363d; padding: 10px 8px; text-align: left; vertical-align: top; }
-    th { color: #8b949e; font-weight: 600; }
-    tr.running { background: #1f2a1f; }
-    tr.done { background: #161b22; }
-    .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; text-transform: uppercase; }
+    .sub { color: #8b949e; margin-bottom: 16px; }
+    .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; min-width: 140px; }
+    .card b { display: block; font-size: 1.3rem; }
+    .global-bar { height: 14px; background: #21262d; border-radius: 7px; overflow: hidden; margin: 12px 0 20px; }
+    .global-bar > div { height: 100%; background: linear-gradient(90deg,#238636,#3fb950); transition: width .5s; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { border-bottom: 1px solid #30363d; padding: 8px 6px; text-align: left; vertical-align: middle; }
+    th { color: #8b949e; }
+    tr.running { background: #1a2e1a; }
+    .pbar { width: 100px; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+    .pbar > div { height: 100%; background: #388bfd; transition: width .5s; }
+    .pbar.done > div { background: #238636; }
+    .badge { padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; text-transform: uppercase; }
     .badge.done { background: #238636; }
-    .badge.running { background: #9e6a03; color: #fff; }
+    .badge.running { background: #9e6a03; }
     .badge.pending { background: #30363d; color: #8b949e; }
-    code { font-size: 0.8rem; }
-    footer { margin-top: 20px; color: #8b949e; font-size: 0.8rem; }
+    #clock { color: #3fb950; font-weight: 600; }
+    .err { color: #f85149; }
   </style>
 </head>
 <body>
   <h1>ATLAS — 12 Promissoras @ ~100M</h1>
-  <p class="sub">FashionMNIST · 107.5M parâmetros · atualiza a cada 30s</p>
-  <div class="cards">
-    <div class="card">Progresso<b>0/13</b></div>
-    <div class="card">Rodando agora<b>exp-100m-001</b>seed 1001</div>
-    <div class="card">Baseline<b>—</b></div>
-    <div class="card">Batch ativo<b>SIM</b></div>
-  </div>
-  <div class="bar"><div></div></div>
+  <p class="sub">FashionMNIST · 107.5M params · <span id="clock">carregando…</span></p>
+  <div class="cards" id="cards"></div>
+  <div class="global-bar"><div id="global-fill" style="width:0%"></div></div>
+  <p id="global-label" style="margin-top:-12px;color:#8b949e;font-size:0.85rem"></p>
   <table>
     <thead><tr>
-      <th>#</th><th>ID</th><th>Origem</th><th>Mecanismo</th><th>Status</th>
-      <th>Val Acc</th><th>Δ baseline</th><th>Seeds</th><th>Detalhe seeds</th>
+      <th>#</th><th>ID</th><th>Mecanismo</th><th>Progresso</th><th>Status</th>
+      <th>Val Acc</th><th>Δ base</th><th>Detalhe</th>
     </tr></thead>
-    <tbody><tr class='running'><td>1</td><td><code>exp-100m-001</code></td><td>exp-007</td><td>warmup+cosine</td><td><span class='badge running'>running</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>2</td><td><code>exp-100m-002</code></td><td>exp-011</td><td>warmup+cosine</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>3</td><td><code>exp-100m-003</code></td><td>exp-016</td><td>local_blend</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>4</td><td><code>exp-100m-004</code></td><td>exp-018</td><td>local_blend</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>5</td><td><code>exp-100m-005</code></td><td>exp-021</td><td>local_blend_k5</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>6</td><td><code>exp-100m-006</code></td><td>exp-022</td><td>laplacian_blend</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>7</td><td><code>exp-100m-007</code></td><td>exp-024</td><td>blend+warmup+cosine</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>8</td><td><code>exp-100m-008</code></td><td>exp-025</td><td>blend+label_smooth</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>9</td><td><code>exp-100m-009</code></td><td>exp-026</td><td>local_blend_k5</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>10</td><td><code>exp-100m-010</code></td><td>exp-027</td><td>blend+LS (ex-campeão)</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>11</td><td><code>exp-100m-011</code></td><td>exp-028</td><td>laplacian_blend</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>12</td><td><code>exp-100m-012</code></td><td>exp-032</td><td>k5+label_smooth</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr><tr class='pending'><td>13</td><td><code>exp-100m-baseline</code></td><td>—</td><td>baseline (referência)</td><td><span class='badge pending'>pending</span></td><td><strong>—</strong> <small></small></td><td>—</td><td>0/3</td><td><small></small></td></tr></tbody>
+    <tbody id="tbody"></tbody>
   </table>
-  <footer>Última atualização UTC: 2026-07-06T07:35:37.605243+00:00 · ~35–40 min/seed, ~2 h/config, ~22–26 h total (CPU)</footer>
-  <script>const STATUS = {"updated_utc": "2026-07-06T07:35:37.605243+00:00", "params_m": 107.51, "batch_running": true, "progress": {"done": 0, "total": 13}, "baseline_acc": null, "current_experiment_id": "exp-100m-001", "current_seed": 1001, "current_cpu_min": 52.7, "eta_note": "~35–40 min/seed, ~2 h/config, ~22–26 h total (CPU)", "experiments": [{"id": "exp-100m-001", "orig": "exp-007", "label": "warmup+cosine", "kind": "RECOMB", "status": "running", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-002", "orig": "exp-011", "label": "warmup+cosine", "kind": "RECOMB", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-003", "orig": "exp-016", "label": "local_blend", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-004", "orig": "exp-018", "label": "local_blend", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-005", "orig": "exp-021", "label": "local_blend_k5", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-006", "orig": "exp-022", "label": "laplacian_blend", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-007", "orig": "exp-024", "label": "blend+warmup+cosine", "kind": "RECOMB", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-008", "orig": "exp-025", "label": "blend+label_smooth", "kind": "RECOMB", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-009", "orig": "exp-026", "label": "local_blend_k5", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-010", "orig": "exp-027", "label": "blend+LS (ex-campeão)", "kind": "RECOMB", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-011", "orig": "exp-028", "label": "laplacian_blend", "kind": "NOVEL", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-012", "orig": "exp-032", "label": "k5+label_smooth", "kind": "RECOMB", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}, {"id": "exp-100m-baseline", "orig": "—", "label": "baseline (referência)", "kind": "BASELINE", "status": "pending", "best_val_acc_mean": null, "best_val_acc_std": null, "delta_vs_baseline": null, "per_seed": [], "n_seeds_done": 0, "n_seeds_total": 3}]};</script>
+  <p class="sub" id="footer"></p>
+  <script>
+    function pct(x) { return (x == null) ? '—' : (x*100).toFixed(2)+'%'; }
+    function delta(x) {
+      if (x == null) return '—';
+      return (x>=0?'+':'') + (x*100).toFixed(2) + ' pp';
+    }
+    function render(d) {
+      document.getElementById('clock').textContent = 'atualizado ' + d.updated_utc.replace('T',' ').slice(0,19) + ' UTC';
+      document.getElementById('cards').innerHTML = `
+        <div class="card">Global<b>${d.global_progress_pct}%</b></div>
+        <div class="card">Concluídos<b>${d.progress.done}/${d.progress.total}</b></div>
+        <div class="card">Rodando<b>${d.current_experiment_id||'—'}</b>step ${d.current_step||0}/${1000}</div>
+        <div class="card">Batch<b>${d.batch_running?'ATIVO':'PARADO'}</b></div>`;
+      document.getElementById('global-fill').style.width = d.global_progress_pct + '%';
+      document.getElementById('global-label').textContent = `Progresso global do batch: ${d.global_progress_pct}%`;
+      document.getElementById('footer').textContent = d.eta_note;
+      const tb = document.getElementById('tbody');
+      tb.innerHTML = d.experiments.map((e,i) => {
+        const cls = e.status;
+        const pcls = e.status==='done'?'pbar done':'pbar';
+        const acc = e.best_val_acc_mean!=null ? pct(e.best_val_acc_mean) : (d.live_val_acc!=null && e.status==='running' ? pct(d.live_val_acc)+' (live)' : '—');
+        const seeds = e.per_seed.map(s => `s${s.seed}:${(s.best_val_acc*100).toFixed(1)}%`).join(', ');
+        return `<tr class="${cls}">
+          <td>${i+1}</td><td><code>${e.id}</code></td><td>${e.label}</td>
+          <td><span class="${pcls}"><div style="width:${e.progress_pct}%"></div></span><strong>${e.progress_pct}%</strong></td>
+          <td><span class="badge ${cls}">${cls}</span></td>
+          <td><strong>${acc}</strong></td>
+          <td>${delta(e.delta_vs_baseline)}</td>
+          <td><small>${e.step_info}${seeds?', '+seeds:''}</small></td></tr>`;
+      }).join('');
+    }
+    async function refresh() {
+      try {
+        const r = await fetch('promissora_100m_status.json?ts=' + Date.now());
+        if (!r.ok) throw new Error(r.status);
+        render(await r.json());
+      } catch (e) {
+        document.getElementById('clock').innerHTML = '<span class="err">erro ao carregar JSON — use http://localhost:8765/promissora_100m_dashboard.html</span>';
+      }
+    }
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
 </body>
 </html>

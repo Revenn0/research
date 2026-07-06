@@ -1,23 +1,22 @@
 # ATLAS — Tracker 100M (12 Promissoras)
 
-**Atualizado:** 2026-07-06T07:35:37.605243+00:00
-**Parâmetros:** 107.5M
-**Progresso:** 0/13
-**Batch rodando:** sim
-**Experimento atual:** exp-100m-001 (seed 1001)
+**Atualizado:** 2026-07-06T08:05:07.014990+00:00
+**Progresso global:** 7.8%
+**Concluídos:** 1/13
+**Rodando:** exp-100m-002 seed 1000 step 25/1000
 
-| # | ID | Origem | Mecanismo | Status | Val Acc | Δ base | Seeds |
-|---|-----|--------|-----------|--------|---------|--------|-------|
-| 1 | exp-100m-001 | exp-007 | warmup+cosine | running | — | — | 0/3 |
-| 2 | exp-100m-002 | exp-011 | warmup+cosine | pending | — | — | 0/3 |
-| 3 | exp-100m-003 | exp-016 | local_blend | pending | — | — | 0/3 |
-| 4 | exp-100m-004 | exp-018 | local_blend | pending | — | — | 0/3 |
-| 5 | exp-100m-005 | exp-021 | local_blend_k5 | pending | — | — | 0/3 |
-| 6 | exp-100m-006 | exp-022 | laplacian_blend | pending | — | — | 0/3 |
-| 7 | exp-100m-007 | exp-024 | blend+warmup+cosine | pending | — | — | 0/3 |
-| 8 | exp-100m-008 | exp-025 | blend+label_smooth | pending | — | — | 0/3 |
-| 9 | exp-100m-009 | exp-026 | local_blend_k5 | pending | — | — | 0/3 |
-| 10 | exp-100m-010 | exp-027 | blend+LS (ex-campeão) | pending | — | — | 0/3 |
-| 11 | exp-100m-011 | exp-028 | laplacian_blend | pending | — | — | 0/3 |
-| 12 | exp-100m-012 | exp-032 | k5+label_smooth | pending | — | — | 0/3 |
-| 13 | exp-100m-baseline | — | baseline (referência) | pending | — | — | 0/3 |
+| # | ID | Mecanismo | % | Status | Val Acc | Δ base |
+|---|-----|-----------|---|--------|---------|--------|
+| 1 | exp-100m-001 | warmup+cosine | **100.0%** | done | 89.78% | — |
+| 2 | exp-100m-002 | warmup+cosine | **0.8%** | running | 0.00% | — |
+| 3 | exp-100m-003 | local_blend | **0.0%** | pending | — | — |
+| 4 | exp-100m-004 | local_blend | **0.0%** | pending | — | — |
+| 5 | exp-100m-005 | local_blend_k5 | **0.0%** | pending | — | — |
+| 6 | exp-100m-006 | laplacian_blend | **0.0%** | pending | — | — |
+| 7 | exp-100m-007 | blend+warmup+cosine | **0.0%** | pending | — | — |
+| 8 | exp-100m-008 | blend+label_smooth | **0.0%** | pending | — | — |
+| 9 | exp-100m-009 | local_blend_k5 | **0.0%** | pending | — | — |
+| 10 | exp-100m-010 | blend+LS (ex-campeão) | **0.0%** | pending | — | — |
+| 11 | exp-100m-011 | laplacian_blend | **0.0%** | pending | — | — |
+| 12 | exp-100m-012 | k5+label_smooth | **0.0%** | pending | — | — |
+| 13 | exp-100m-baseline | baseline (referência) | **0.0%** | pending | — | — |
