@@ -7,7 +7,7 @@ while true; do
   python3 atlas_100m_dashboard.py >/dev/null 2>&1 || true
   {
     echo "=== $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
-    if pgrep -f 'atlas_batch_100m.sh' >/dev/null; then echo "BATCH: RODANDO"; else echo "BATCH: PARADO"; fi
+    if pgrep -f 'atlas_batch_100m' >/dev/null; then echo "BATCH: RODANDO"; else echo "BATCH: PARADO"; fi
     TRAIN_PID=$(pgrep -f 'train_baseline.py.*width_mult' | head -1)
     if [ -n "$TRAIN_PID" ]; then
       ps -p "$TRAIN_PID" -o etime=,pcpu=,pmem=,rss= 2>/dev/null | awk '{print "TREINO PID '"$TRAIN_PID"': tempo="$1" CPU="$2"% RAM="$3"% RSS="$4"KB"}'

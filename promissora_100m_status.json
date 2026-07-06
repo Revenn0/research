@@ -1,18 +1,18 @@
 {
-  "updated_utc": "2026-07-06T08:40:27.258217+00:00",
+  "updated_utc": "2026-07-06T10:36:06.037401+00:00",
   "params_m": 107.51,
-  "batch_running": false,
-  "global_progress_pct": 12.2,
+  "batch_running": true,
+  "global_progress_pct": 15.5,
   "progress": {
-    "done": 1,
+    "done": 2,
     "total": 13
   },
   "baseline_acc": null,
-  "current_experiment_id": "exp-100m-002",
-  "current_seed": 1001,
-  "current_step": 750,
-  "current_step_pct": 75.0,
-  "live_val_acc": 0.872,
+  "current_experiment_id": "exp-100m-003",
+  "current_seed": 1000,
+  "current_step": 50,
+  "current_step_pct": 5.0,
+  "live_val_acc": 0.0,
   "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
   "experiments": [
     {
@@ -53,22 +53,32 @@
       "orig": "exp-011",
       "label": "warmup+cosine",
       "kind": "RECOMB",
-      "status": "running",
-      "progress_pct": 58.3,
-      "step_info": "seed 1001: step 750/1000 (75.0%)",
-      "best_val_acc_mean": 0.872,
-      "best_val_acc_std": null,
+      "status": "done",
+      "progress_pct": 100.0,
+      "step_info": "1000/1000 × 3 seeds",
+      "best_val_acc_mean": 0.8993333333333333,
+      "best_val_acc_std": 0.0005686240703077156,
       "delta_vs_baseline": null,
       "delta_pp": null,
-      "verdict": "rodando",
+      "verdict": "INCONCLUSIVA",
       "per_seed": [
         {
           "seed": 1000,
           "best_val_acc": 0.8987,
           "wall_time_s": 1228.8415320870117
+        },
+        {
+          "seed": 1001,
+          "best_val_acc": 0.8995,
+          "wall_time_s": 1239.1771892080433
+        },
+        {
+          "seed": 1002,
+          "best_val_acc": 0.8998,
+          "wall_time_s": 1207.0460973779554
         }
       ],
-      "n_seeds_done": 1,
+      "n_seeds_done": 3,
       "n_seeds_total": 3
     },
     {
@@ -76,14 +86,14 @@
       "orig": "exp-016",
       "label": "local_blend",
       "kind": "NOVEL",
-      "status": "pending",
-      "progress_pct": 0.0,
-      "step_info": "aguardando",
-      "best_val_acc_mean": null,
+      "status": "running",
+      "progress_pct": 1.7,
+      "step_info": "seed 1000: step 50/1000 (5.0%)",
+      "best_val_acc_mean": 0.0,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
       "delta_pp": null,
-      "verdict": "pendente",
+      "verdict": "rodando",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3

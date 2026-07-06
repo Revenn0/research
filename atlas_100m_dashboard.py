@@ -271,7 +271,7 @@ def build_status() -> dict:
     global_pct = round(sum(r["progress_pct"] for r in rows) / len(rows), 1)
 
     batch_running = subprocess.run(
-        ["pgrep", "-f", "atlas_batch_100m.sh"], capture_output=True, text=True
+        ["pgrep", "-f", "atlas_batch_100m"], capture_output=True, text=True
     ).returncode == 0
 
     return {

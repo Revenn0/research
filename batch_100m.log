@@ -233,3 +233,8 @@ subprocess.CalledProcessError: Command '['/usr/bin/python3', 'train_baseline.py'
 ========== RETOMADA BATCH 100M ==========
 === SKIP exp-100m-001 (já concluído) ===
 === exp-100m-002 | exp-011 warmup+cosine ===
+========== RETOMADA BATCH 100M ==========
+=== SKIP exp-100m-001 (já concluído) ===
+=== exp-100m-002 | exp-011 warmup+cosine ===
+=== SKIP exp-100m-002 (já concluído) ===
+=== exp-100m-003 | exp-016 local_blend ===
