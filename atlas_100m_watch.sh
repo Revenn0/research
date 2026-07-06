@@ -18,5 +18,5 @@ while true; do
     python3 -c "import json;d=json.load(open('promissora_100m_status.json'));print(f\"EXP: {d.get('current_experiment_id')} seed {d.get('current_seed')} | done {d['progress']['done']}/{d['progress']['total']}\")" 2>/dev/null || true
     echo ""
   } > "$HEARTBEAT"
-  sleep 10
+  sleep 5
 done

@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-07-06T13:45:03.990672+00:00",
+  "updated_utc": "2026-07-06T13:45:16.743381+00:00",
   "params_m": 107.51,
   "batch_running": true,
   "global_progress_pct": 28.3,
@@ -12,7 +12,7 @@
   "current_seed": 1002,
   "current_step": 25,
   "current_step_pct": 2.5,
-  "live_val_acc": 0.0,
+  "live_val_acc": null,
   "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
   "experiments": [
     {
@@ -122,7 +122,7 @@
       "status": "running",
       "progress_pct": 67.5,
       "step_info": "seed 1002: step 25/1000 (2.5%)",
-      "best_val_acc_mean": 0.0,
+      "best_val_acc_mean": 0.8868,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
       "delta_pp": null,

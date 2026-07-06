@@ -1,6 +1,6 @@
 # ATLAS — Tracker 100M (12 Promissoras)
 
-**Atualizado:** 2026-07-06T13:45:03.990672+00:00
+**Atualizado:** 2026-07-06T13:45:16.743381+00:00
 **Progresso global:** 28.3%
 **Concluídos:** 3/13
 **Rodando:** exp-100m-004 seed 1002 step 25/1000
@@ -10,7 +10,7 @@
 | 1 | exp-100m-001 | warmup+cosine | **100.0%** | done | 89.78% | — | INCONCLUSIVA |
 | 2 | exp-100m-002 | warmup+cosine | **100.0%** | done | 89.93% | — | INCONCLUSIVA |
 | 3 | exp-100m-003 | local_blend | **100.0%** | done | 89.29% | — | INCONCLUSIVA |
-| 4 | exp-100m-004 | local_blend | **67.5%** | running | 0.00% | — | rodando |
+| 4 | exp-100m-004 | local_blend | **67.5%** | running | 88.68% | — | rodando |
 | 5 | exp-100m-005 | local_blend_k5 | **0.0%** | pending | — | — | pendente |
 | 6 | exp-100m-006 | laplacian_blend | **0.0%** | pending | — | — | pendente |
 | 7 | exp-100m-007 | blend+warmup+cosine | **0.0%** | pending | — | — | pendente |

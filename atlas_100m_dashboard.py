@@ -82,47 +82,77 @@ def load_live_progress() -> dict | None:
         return None
 
 
+def _etime_to_sec(etime: str) -> float:
+    et = etime.strip()
+    if not et:
+        return 0.0
+    if "-" in et:
+        d, t = et.split("-", 1)
+        hh, mm, ss = (t.split(":") + ["0"])[:3]
+        return int(d) * 86400 + int(hh) * 3600 + int(mm) * 60 + int(ss)
+    if et.count(":") == 2:
+        hh, mm, ss = et.split(":")
+        return int(hh) * 3600 + int(mm) * 60 + int(ss)
+    if et.count(":") == 1:
+        mm, ss = et.split(":")
+        return int(mm) * 60 + int(ss)
+    return float(int(et))
+
+
 def detect_running() -> dict | None:
     try:
         out = subprocess.check_output(["ps", "aux"], text=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
+
+    candidates: list[dict] = []
     for line in out.splitlines():
-        if "train_baseline.py" not in line or "width_mult" not in line or "hidden_dim 2048" not in line:
+        if "train_baseline.py" not in line or "width_mult" not in line or "--hidden_dim" not in line:
             continue
-        if "grep" in line:
+        if "grep" in line or "python3 -c" in line:
             continue
         m_seed = re.search(r"--seed\s+(\d+)", line)
+        m_exp = re.search(r"result_path\s+\S+/(exp-100m-[^\s/_]+)", line)
         seed = int(m_seed.group(1)) if m_seed else None
+        experiment_id = m_exp.group(1) if m_exp else None
         parts = line.split()
         pid = parts[1] if len(parts) > 1 else None
+        cpu = 0.0
+        try:
+            cpu = float(parts[2])
+        except (IndexError, ValueError):
+            pass
         etime_sec = 0.0
         if pid:
             try:
-                et = subprocess.check_output(["ps", "-p", pid, "-o", "etime="], text=True).strip()
-                if "-" in et:
-                    d, t = et.split("-", 1)
-                    hh, mm, ss = (t.split(":") + ["0"])[:3]
-                    etime_sec = int(d) * 86400 + int(hh) * 3600 + int(mm) * 60 + int(ss)
-                elif et.count(":") == 2:
-                    hh, mm, ss = et.split(":")
-                    etime_sec = int(hh) * 3600 + int(mm) * 60 + int(ss)
-                elif et.count(":") == 1:
-                    mm, ss = et.split(":")
-                    etime_sec = int(mm) * 60 + int(ss)
-                else:
-                    etime_sec = int(et)
+                et = subprocess.check_output(["ps", "-p", pid, "-o", "etime="], text=True)
+                etime_sec = _etime_to_sec(et)
             except (subprocess.CalledProcessError, ValueError):
                 pass
-        return {"seed": seed, "pid": pid, "etime_sec": etime_sec}
-    return None
+        candidates.append(
+            {
+                "seed": seed,
+                "pid": pid,
+                "etime_sec": etime_sec,
+                "cpu": cpu,
+                "experiment_id": experiment_id,
+            }
+        )
+
+    if not candidates:
+        return None
+    # processo principal de treino costuma ter mais CPU/tempo que workers DataLoader
+    return max(candidates, key=lambda c: (c.get("cpu", 0), c.get("etime_sec", 0)))
 
 
-def detect_current_exp_id() -> str | None:
+def detect_current_exp_id(running: dict | None = None) -> str | None:
+    if running and running.get("experiment_id"):
+        return running["experiment_id"]
+
     if not BATCH_LOG.exists():
         return None
     text = BATCH_LOG.read_text(encoding="utf-8")
-    headers = re.findall(r"=== (exp-100m-[^\s|]+)", text)
+    headers = re.findall(r"(exp-100m-(?:baseline|\d{3}))", text)
     if not headers:
         return None
     completed = load_completed()
@@ -189,7 +219,7 @@ def build_status() -> dict:
     completed = load_completed()
     seed_results = load_seed_results()
     running = detect_running()
-    current_id = detect_current_exp_id()
+    current_id = detect_current_exp_id(running)
     live = load_live_progress()
 
     baseline_acc = None
@@ -202,7 +232,8 @@ def build_status() -> dict:
     if live and running and live.get("seed") == running.get("seed"):
         current_step = int(live.get("step", 0))
         current_step_pct = float(live.get("step_pct", 0))
-        live_val_acc = live.get("best_val_acc")
+        bva = live.get("best_val_acc")
+        live_val_acc = bva if bva not in (None, 0, 0.0) else live.get("last_val_acc")
     elif running:
         current_step = min(STEPS_PER_SEED, int(running.get("etime_sec", 0) / SEC_PER_STEP))
         current_step_pct = round(100.0 * current_step / STEPS_PER_SEED, 1)
