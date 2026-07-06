@@ -1,12 +1,12 @@
 {
-  "updated_utc": "2026-07-06T16:08:00.166762+00:00",
+  "updated_utc": "2026-07-06T16:11:42.471874+00:00",
   "params_m": 107.51,
   "batch_running": true,
   "parallel_running": 1,
   "running_experiments": [
     "exp-100m-006"
   ],
-  "global_progress_pct": 41.4,
+  "global_progress_pct": 41.7,
   "progress": {
     "done": 5,
     "total": 13
@@ -190,9 +190,9 @@
       "label": "laplacian_blend",
       "kind": "NOVEL",
       "status": "running",
-      "progress_pct": 38.3,
-      "step_info": "seed 1001: step 150/1000 (15.0%)",
-      "best_val_acc_mean": 0.8915,
+      "progress_pct": 42.5,
+      "step_info": "seed 1001: step 275/1000 (27.5%)",
+      "best_val_acc_mean": 0.8612,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
       "delta_pp": null,
