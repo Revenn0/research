@@ -1,7 +1,11 @@
 {
-  "updated_utc": "2026-07-06T15:44:55.847291+00:00",
+  "updated_utc": "2026-07-06T15:45:06.144685+00:00",
   "params_m": 107.51,
   "batch_running": true,
+  "parallel_running": 1,
+  "running_experiments": [
+    "exp-100m-006"
+  ],
   "global_progress_pct": 39.1,
   "progress": {
     "done": 5,
@@ -10,8 +14,8 @@
   "baseline_acc": null,
   "current_experiment_id": "exp-100m-006",
   "current_seed": 1000,
-  "current_step": 250,
-  "current_step_pct": 25.0,
+  "current_step": 0,
+  "current_step_pct": 0.0,
   "live_val_acc": null,
   "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
   "experiments": [

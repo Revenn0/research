@@ -1,9 +1,9 @@
 # ATLAS — Tracker 100M (12 Promissoras)
 
-**Atualizado:** 2026-07-06T15:44:55.847291+00:00
+**Atualizado:** 2026-07-06T15:45:06.144685+00:00
 **Progresso global:** 39.1%
 **Concluídos:** 5/13
-**Rodando:** exp-100m-006 seed 1000 step 250/1000
+**Rodando:** exp-100m-006 seed 1000 step 0/1000
 
 | # | ID | Mecanismo | % | Status | Val Acc | Δ base | Veredito |
 |---|-----|-----------|---|--------|---------|--------|----------|
