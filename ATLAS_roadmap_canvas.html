@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ATLAS — Roadmap Interativo</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel2: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --orange: #db6d28;
+      --red: #f85149;
+      --purple: #a371f7;
+      --cyan: #39d353;
+      --glow: rgba(88,166,255,.25);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } aside { display: none; } }
+
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+    aside h1 { font-size: 1.1rem; margin: 0 0 4px; }
+    aside .sub { color: var(--muted); font-size: .78rem; margin-bottom: 18px; line-height: 1.4; }
+    .nav-btn {
+      display: block; width: 100%; text-align: left;
+      background: transparent; border: 1px solid transparent;
+      color: var(--text); padding: 8px 10px; border-radius: 8px;
+      cursor: pointer; font-size: .85rem; margin-bottom: 4px;
+    }
+    .nav-btn:hover { background: var(--panel2); }
+    .nav-btn.active { background: #1f3d5c; border-color: #388bfd; color: #79c0ff; }
+
+    main { padding: 24px 28px 60px; max-width: 1200px; }
+    .hero {
+      background: linear-gradient(135deg, #1a2332 0%, #161b22 60%, #1c1a2e 100%);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 22px 24px; margin-bottom: 22px;
+      position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: ""; position: absolute; top: -40%; right: -10%;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, var(--glow), transparent 70%);
+      pointer-events: none;
+    }
+    .hero h2 { margin: 0 0 6px; font-size: 1.45rem; }
+    .hero p { margin: 0; color: var(--muted); max-width: 720px; line-height: 1.5; }
+    .you-are-here {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 14px; padding: 8px 14px; border-radius: 20px;
+      background: #1f3d5c; border: 1px solid #388bfd;
+      font-size: .88rem; font-weight: 600; color: #79c0ff;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(56,139,253,.4)} 50%{box-shadow:0 0 0 8px rgba(56,139,253,0)} }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+    .kpi {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .kpi .val { font-size: 1.35rem; font-weight: 700; }
+    .kpi .lbl { font-size: .72rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+
+    .section { display: none; animation: fade .3s ease; }
+    .section.active { display: block; }
+    @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+    h3 { font-size: 1.05rem; margin: 0 0 14px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before {
+      content: ""; position: absolute; left: 9px; top: 8px; bottom: 8px;
+      width: 2px; background: linear-gradient(180deg, var(--green), var(--accent), var(--yellow), var(--muted));
+    }
+    .phase {
+      position: relative; margin-bottom: 16px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: border-color .2s, transform .15s;
+    }
+    .phase:hover { border-color: #484f58; transform: translateX(2px); }
+    .phase.current { border-color: #388bfd; box-shadow: 0 0 0 1px #388bfd33; }
+    .phase::before {
+      content: ""; position: absolute; left: -24px; top: 22px;
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--bg); z-index: 1;
+    }
+    .phase.done::before { background: var(--green); }
+    .phase.current::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .phase.active-run::before { background: var(--yellow); animation: pulse 2s infinite; }
+    .phase.pending::before { background: var(--muted); }
+    .phase.future::before { background: transparent; border-color: var(--muted); }
+
+    .phase-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; user-select: none;
+    }
+    .phase-head .num { font-size: .7rem; color: var(--muted); min-width: 28px; }
+    .phase-head .title { flex: 1; font-weight: 600; font-size: .95rem; }
+    .phase-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+    .phase.open .phase-body { display: block; padding-top: 14px; }
+    .phase-body p { margin: 0 0 10px; color: var(--muted); font-size: .88rem; line-height: 1.55; }
+    .phase-body ul { margin: 8px 0; padding-left: 18px; color: var(--muted); font-size: .86rem; line-height: 1.6; }
+    .phase-body li strong { color: var(--text); }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .badge.done { background: #23863633; color: var(--green); }
+    .badge.current { background: #1f3d5c; color: #79c0ff; }
+    .badge.run { background: #9e6a0333; color: var(--yellow); }
+    .badge.wait { background: #30363d; color: var(--muted); }
+    .badge.future { background: #3d2a5c33; color: var(--purple); }
+
+    /* Stack v2 card */
+    .stack {
+      background: var(--panel2); border: 1px dashed #484f58;
+      border-radius: 10px; padding: 16px; margin: 16px 0;
+      font-family: ui-monospace, monospace; font-size: .82rem; line-height: 1.7;
+    }
+    .stack .fix { color: var(--green); }
+    .stack .test { color: var(--accent); }
+    .stack .scale { color: var(--yellow); }
+
+    /* Results table */
+    table { width: 100%; border-collapse: collapse; font-size: .84rem; margin-top: 10px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+    th { color: var(--muted); font-weight: 600; }
+    tr:hover td { background: #1c2128; }
+    .acc { font-weight: 700; color: var(--green); }
+    .delta-pos { color: var(--green); }
+    .delta-neg { color: var(--red); }
+
+    /* Next steps */
+    .steps { display: grid; gap: 12px; }
+    .step-card {
+      display: grid; grid-template-columns: 48px 1fr auto;
+      gap: 14px; align-items: start;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+    }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: #1f3d5c; color: #79c0ff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.1rem;
+    }
+    .step-card h4 { margin: 0 0 6px; font-size: .95rem; }
+    .step-card p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.5; }
+    .eta { font-size: .78rem; color: var(--yellow); white-space: nowrap; padding-top: 4px; }
+
+    /* Decision tree */
+    .tree { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 20px 0; }
+    .tree-node {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 18px; text-align: center;
+      max-width: 420px; width: 100%; font-size: .88rem;
+    }
+    .tree-node.highlight { border-color: var(--accent); background: #1a2e44; }
+    .tree-arrow { color: var(--muted); font-size: 1.2rem; }
+    .tree-branch { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .tree-branch .tree-node { flex: 1; min-width: 180px; max-width: 280px; font-size: .82rem; }
+
+    /* Filters */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter {
+      background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 12px; border-radius: 8px;
+      cursor: pointer; font-size: .8rem;
+    }
+    .filter.on { background: #1f3d5c; border-color: #388bfd; color: #79c0ff; }
+
+    .progress-wrap { margin: 12px 0; }
+    .progress-label { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); margin-bottom: 4px; }
+    .progress-bar { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+    .progress-bar > div { height: 100%; border-radius: 4px; transition: width .6s ease; }
+    .bar-green { background: linear-gradient(90deg, #238636, #3fb950); }
+    .bar-blue { background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+    .bar-yellow { background: linear-gradient(90deg, #9e6a03, #d29922); }
+
+    .footer-note { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: .78rem; }
+    .link { color: var(--accent); text-decoration: none; }
+    .link:hover { text-decoration: underline; }
+
+    /* Canvas viz */
+    .canvas-map {
+      position: relative; height: 340px;
+      background: #0a0e14; border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; margin-bottom: 20px;
+    }
+    .canvas-map svg { width: 100%; height: 100%; }
+    .map-node { cursor: pointer; transition: opacity .2s; }
+    .map-node:hover circle { stroke-width: 3; filter: drop-shadow(0 0 6px currentColor); }
+    .map-label { font-size: 11px; fill: var(--muted); pointer-events: none; }
+    .map-title { font-size: 13px; fill: var(--text); font-weight: 600; pointer-events: none; }
+    .tooltip {
+      position: fixed; display: none; z-index: 100;
+      background: #1c2128; border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; font-size: .82rem;
+      max-width: 280px; pointer-events: none; box-shadow: 0 8px 24px #0008;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <h1>ATLAS Roadmap</h1>
+    <p class="sub">Escada de evidência · FashionMNIST → CIFAR → LM → Frontier<br>Atualizado: 2026-07-06</p>
+    <button class="nav-btn active" data-sec="overview">📍 Visão geral</button>
+    <button class="nav-btn" data-sec="timeline">🗺️ Timeline completa</button>
+    <button class="nav-btn" data-sec="results">📊 Resultados</button>
+    <button class="nav-btn" data-sec="stack">⚗️ Stack v2</button>
+    <button class="nav-btn" data-sec="next">▶️ Próximos passos</button>
+    <button class="nav-btn" data-sec="decision">🔀 Árvore de decisão</button>
+    <button class="nav-btn" data-sec="frontier">🎯 vs Liquid AI</button>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="progress-label"><span>Progresso global</span><span id="global-pct">62%</span></div>
+      <div class="progress-bar"><div class="bar-green" id="global-bar" style="width:62%"></div></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h2>Projeto ATLAS — Onde estamos</h2>
+      <p>Descobrimos <strong>Multi-Scale Blend</strong> (NOVEL), validamos em GPU e CIFAR-10. Agora testamos se a <strong>stack v2</strong> escala em ~107M params — gate para LM 230M vs Liquid AI.</p>
+      <div class="you-are-here">📍 Você está aqui → <span id="current-label">FMNIST @107M GPU (Colab 3 configs)</span></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="val">55+</div><div class="lbl">Experimentos vision</div></div>
+      <div class="kpi"><div class="val" style="color:var(--green)">92,90%</div><div class="lbl">Campeão FMNIST</div></div>
+      <div class="kpi"><div class="val" style="color:var(--green)">71,06%</div><div class="lbl">Campeão CIFAR</div></div>
+      <div class="kpi"><div class="val" style="color:var(--accent)">89,93%</div><div class="lbl">Líder @107M CPU</div></div>
+      <div class="kpi"><div class="val" style="color:var(--yellow)">~40 min</div><div class="lbl">ETA próximo run</div></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="section active">
+      <h3>Mapa interativo</h3>
+      <div class="canvas-map" id="map">
+        <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#484f58"/>
+            </marker>
+          </defs>
+          <!-- connections -->
+          <line x1="120" y1="170" x2="220" y2="170" stroke="#30363d" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="300" y1="170" x2="400" y2="170" stroke="#30363d" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="480" y1="170" x2="580" y2="170" stroke="#388bfd" stroke-width="3" marker-end="url(#arrow)"/>
+          <line x1="660" y1="170" x2="760" y2="170" stroke="#30363d" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="580" y1="200" x2="580" y2="280" stroke="#9e6a03" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+          <!-- nodes -->
+          <g class="map-node" data-id="p1" transform="translate(70,170)">
+            <circle r="28" fill="#23863622" stroke="#3fb950" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="5">Fase 1</text>
+            <text class="map-label" text-anchor="middle" y="50">FMNIST</text>
+            <text class="map-label" text-anchor="middle" y="64">pequeno</text>
+          </g>
+          <g class="map-node" data-id="p2" transform="translate(260,170)">
+            <circle r="28" fill="#23863622" stroke="#3fb950" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="5">Fase 2</text>
+            <text class="map-label" text-anchor="middle" y="50">GPU +</text>
+            <text class="map-label" text-anchor="middle" y="64">CIFAR</text>
+          </g>
+          <g class="map-node" data-id="p3" transform="translate(450,170)">
+            <circle r="28" fill="#23863622" stroke="#3fb950" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="5">Fase 3</text>
+            <text class="map-label" text-anchor="middle" y="50">107M</text>
+            <text class="map-label" text-anchor="middle" y="64">CPU</text>
+          </g>
+          <g class="map-node" data-id="p4" transform="translate(580,170)">
+            <circle r="32" fill="#1f3d5c" stroke="#58a6ff" stroke-width="3"/>
+            <text class="map-title" text-anchor="middle" y="5" fill="#79c0ff">AGORA</text>
+            <text class="map-label" text-anchor="middle" y="52">107M GPU</text>
+            <text class="map-label" text-anchor="middle" y="66">3 configs</text>
+          </g>
+          <g class="map-node" data-id="p5" transform="translate(710,170)">
+            <circle r="28" fill="#9e6a0322" stroke="#d29922" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="5">Fase 5</text>
+            <text class="map-label" text-anchor="middle" y="50">LM</text>
+            <text class="map-label" text-anchor="middle" y="64">100M</text>
+          </g>
+          <g class="map-node" data-id="p6" transform="translate(830,170)">
+            <circle r="28" fill="#3d2a5c33" stroke="#a371f7" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="5">Fase 6</text>
+            <text class="map-label" text-anchor="middle" y="50">LM</text>
+            <text class="map-label" text-anchor="middle" y="64">230M</text>
+          </g>
+          <g class="map-node" data-id="p5b" transform="translate(580,290)">
+            <circle r="22" fill="#9e6a0322" stroke="#d29922" stroke-width="2"/>
+            <text class="map-title" text-anchor="middle" y="4" font-size="11">LM 100M</text>
+            <text class="map-label" text-anchor="middle" y="38" font-size="10">paralelo CPU</text>
+          </g>
+        </svg>
+      </div>
+      <p style="color:var(--muted);font-size:.86rem">Clique nos nós do mapa para ver detalhes. Linha azul = etapa atual. Tracejado = trabalho paralelo.</p>
+
+      <h3 style="margin-top:28px">Resumo executivo</h3>
+      <table>
+        <tr><th>Área</th><th>Status</th><th>Destaque</th></tr>
+        <tr><td>Descoberta NOVEL</td><td><span class="badge done">Concluído</span></td><td>multi_scale_blend + LS + wc → <span class="acc">92,90%</span></td></tr>
+        <tr><td>Validação GPU (FMNIST)</td><td><span class="badge done">Confirmado</span></td><td>8/9 métodos; multi_scale <span class="acc">93,37%</span></td></tr>
+        <tr><td>Generalização CIFAR-10</td><td><span class="badge done">Confirmado</span></td><td>+3,48 pp vs baseline; +1,62 pp vs SE-Net</td></tr>
+        <tr><td>FMNIST @107M CPU</td><td><span class="badge done">Parcial</span></td><td>warmup+cosine <span class="acc">89,93%</span>; batch 12 cancelado</td></tr>
+        <tr><td>FMNIST @107M GPU</td><td><span class="badge current">Aguardando você</span></td><td>ATLAS_100M_Colab.ipynb · 3 configs · ~40 min</td></tr>
+        <tr><td>LM 100M TokenBlend</td><td><span class="badge run">Rodando</span></td><td>baseline ~2,24 val_loss; token_blend pendente</td></tr>
+        <tr><td>LM 230M vs Liquid</td><td><span class="badge future">Futuro</span></td><td>fineweb-edu + smoltalk + GRPO opcional</td></tr>
+      </table>
+    </section>
+
+    <!-- TIMELINE -->
+    <section id="timeline" class="section">
+      <h3>Timeline — escada de evidência</h3>
+      <div class="filters">
+        <button class="filter on" data-f="all">Todos</button>
+        <button class="filter" data-f="vision">Vision</button>
+        <button class="filter" data-f="lm">Language Model</button>
+        <button class="filter" data-f="done">Concluídos</button>
+        <button class="filter" data-f="active">Em andamento</button>
+      </div>
+      <div class="timeline" id="timeline-list"></div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="results" class="section">
+      <h3>Resultados confirmados</h3>
+      <div class="filters" id="res-filters">
+        <button class="filter on" data-r="all">Todos</button>
+        <button class="filter" data-r="fmnist">FMNIST</button>
+        <button class="filter" data-r="cifar">CIFAR-10</button>
+        <button class="filter" data-r="100m">@107M</button>
+      </div>
+      <table id="results-table">
+        <thead><tr><th>Benchmark</th><th>Campeão</th><th>Acc / Loss</th><th>Δ</th><th>Veredito</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- STACK -->
+    <section id="stack" class="section">
+      <h3>Stack v2 — receita fixa</h3>
+      <div class="stack">
+        <div class="fix">FIXO: warmup_steps=100 + scheduler=cosine + lr=0.001 + weight_decay=1e-4</div>
+        <div class="test">TESTAR: multi_scale_blend OU tri_scale_blend + label_smoothing 0.1</div>
+        <div class="scale">ESCALA: width_mult=16, hidden_dim=2048 (~107M), 1000 steps, cuda+amp</div>
+      </div>
+      <h3 style="margin-top:24px">3 configs Colab (próximo run)</h3>
+      <table>
+        <tr><th>ID</th><th>Stack</th><th>Objetivo</th><th>Ref CPU</th></tr>
+        <tr><td>exp-100m-wc</td><td>warmup+cosine</td><td>Confirmar campeão CPU</td><td class="acc">89,93%</td></tr>
+        <tr><td>exp-100m-ms</td><td>multi_scale + LS + wc</td><td>Campeão CIFAR em 107M</td><td>—</td></tr>
+        <tr><td>exp-100m-tri</td><td>tri_scale + LS + wc</td><td>Recorde CPU pequeno</td><td>92,98% @7200</td></tr>
+      </table>
+      <h3 style="margin-top:24px">O que foi refutado</h3>
+      <ul style="color:var(--muted);line-height:1.8;font-size:.88rem">
+        <li><strong style="color:var(--red)">laplacian_blend</strong> — −1,99 pp GPU, ~84% @107M CPU</li>
+        <li><strong style="color:var(--red)">Batch CPU 12 promissoras</strong> — cancelado (22–26h, schedule &gt; blend puro)</li>
+        <li>EMA, BatchNorm, signed_sqrt, AdamW+cosine isolado — MORTA em escala pequena</li>
+      </ul>
+    </section>
+
+    <!-- NEXT STEPS -->
+    <section id="next" class="section">
+      <h3>Próximos passos (ordem recomendada)</h3>
+      <div class="steps" id="steps-list"></div>
+      <h3 style="margin-top:28px">Estimativas de tempo</h3>
+      <table>
+        <tr><th>Etapa</th><th>Onde</th><th>Tempo</th><th>Bloqueio</th></tr>
+        <tr><td>Colab 3 configs × 3 seeds</td><td>A100/H100</td><td class="eta">~35–50 min</td><td>Você rodar notebook</td></tr>
+        <tr><td>Download + análise ranking</td><td>—</td><td>~5 min</td><td>Resultado Colab</td></tr>
+        <tr><td>LM 100M restante</td><td>VM CPU (PR #3)</td><td>~5–7 h</td><td>Em andamento</td></tr>
+        <tr><td>LM 230M pré-treino Colab</td><td>A100 40GB</td><td>~4–8 h GPU</td><td>Stack v2 confirmada</td></tr>
+        <tr><td>1B smoke + QLoRA</td><td>Colab A100</td><td>~2–4 h</td><td>LM 100M ok</td></tr>
+        <tr><td>7B QLoRA/inferência</td><td>Colab Pro+ 80GB</td><td>~6–12 h</td><td>Lei de escala</td></tr>
+      </table>
+    </section>
+
+    <!-- DECISION -->
+    <section id="decision" class="section">
+      <h3>Árvore de decisão — após Colab @107M</h3>
+      <div class="tree">
+        <div class="tree-node highlight">Resultado ATLAS_100M_Colab.ipynb</div>
+        <div class="tree-arrow">▼</div>
+        <div class="tree-branch">
+          <div class="tree-node" style="border-color:var(--green)">
+            <strong>ms ou tri &gt; 89,93%</strong><br>
+            <span style="color:var(--muted)">Stack v2 confirmada @107M</span><br>
+            → Escalar LM 230M com multi/tri TokenBlend
+          </div>
+          <div class="tree-node" style="border-color:var(--yellow)">
+            <strong>Só wc ganha (~89,9%)</strong><br>
+            <span style="color:var(--muted)">Mixer não escala em FMNIST 107M</span><br>
+            → Focar schedule + LM; mixer só em LM
+          </div>
+          <div class="tree-node" style="border-color:var(--muted)">
+            <strong>Todos ~empate</strong><br>
+            <span style="color:var(--muted)">Inconclusivo</span><br>
+            → Mais seeds ou repetir CIFAR @107M
+          </div>
+        </div>
+        <div class="tree-arrow">▼</div>
+        <div class="tree-node">LM 100M TokenBlend (paralelo) → decisão independente por val_loss</div>
+        <div class="tree-arrow">▼</div>
+        <div class="tree-node" style="border-color:var(--purple)">ATLAS-230M: fineweb-edu + smoltalk vs Liquid LFM2.5-230M</div>
+      </div>
+    </section>
+
+    <!-- FRONTIER -->
+    <section id="frontier" class="section">
+      <h3>Meta longo prazo — vs Liquid AI LFM2.5-230M</h3>
+      <p style="color:var(--muted);line-height:1.6;font-size:.9rem;max-width:720px">
+        Aposta realista: competir em <strong>tok/s e footprint</strong>, não IFEval 71+ no curto prazo.
+        IFStruct = benchmark de avaliação, não dataset de treino.
+      </p>
+      <table style="margin-top:16px">
+        <tr><th>Fase</th><th>Pipeline</th><th>Métrica</th><th>Status</th></tr>
+        <tr><td>Pré-treino</td><td>fineweb-edu</td><td>val_loss, perplexidade</td><td><span class="badge future">Planejado</span></td></tr>
+        <tr><td>SFT</td><td>smoltalk</td><td>loss conversacional</td><td><span class="badge future">Planejado</span></td></tr>
+        <tr><td>Alinhamento</td><td>GRPO (opcional)</td><td>IFEval, coding</td><td><span class="badge future">Opcional</span></td></tr>
+        <tr><td>Benchmark</td><td>IFStruct, MMLU-lite</td><td>vs LFM2.5-230M</td><td><span class="badge wait">Após 230M</span></td></tr>
+      </table>
+      <div class="progress-wrap" style="margin-top:24px">
+        <div class="progress-label"><span>Roadmap frontier</span><span>15%</span></div>
+        <div class="progress-bar"><div class="bar-blue" style="width:15%"></div></div>
+      </div>
+    </section>
+
+    <p class="footer-note">
+      Notebook atual: <code>ATLAS_100M_Colab.ipynb</code> (self-contained, sem GitHub) ·
+      Branch: <code>cursor/promissora-scale-c396</code> ·
+      Critérios: <code>verdict_criteria_100m.md</code>
+    </p>
+  </main>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const PHASES = [
+  { id:1, cat:"vision", status:"done", title:"Descoberta FMNIST pequeno (~128 hidden)",
+    badge:"done", label:"Concluído",
+    body:`<p>55+ experimentos (exp-000…055). Campeão <strong>exp-047 multi_scale+LS+wc @7200 = 92,90%</strong> (+1,28 pp vs baseline).</p>
+    <ul><li>NOVEL: Multi-Scale Blend (dw3+dw5, gate média)</li><li>Top-5 antigo (91,78%) superado</li><li>48 exp no primeiro ciclo revolucionário</li></ul>`},
+  { id:2, cat:"vision", status:"done", title:"Validação GPU A100 (FMNIST width×2)",
+    badge:"done", label:"Confirmado",
+    body:`<p>Colab A100: multi_scale <strong>93,37%</strong> (+2,32 pp). 8/9 CONFIRMADOS.</p>
+    <ul><li>laplacian REFUTADO (−1,99 pp, instável)</li><li>CPU↔GPU hierarquia consistente</li></ul>`},
+  { id:3, cat:"vision", status:"done", title:"CIFAR-10 head-to-head vs SE/CBAM",
+    badge:"done", label:"Confirmado",
+    body:`<p>Régua justa baseline_ls_wc 67,58%. NOVEL multi_scale <strong>71,06%</strong> (+3,48 pp, +1,62 pp vs SE-Net).</p>
+    <ul><li>Generalização além FMNIST confirmada</li><li>Stack LS+wc essencial</li></ul>`},
+  { id:4, cat:"vision", status:"done", title:"FMNIST @107M CPU (amostra)",
+    badge:"done", label:"Parcial",
+    body:`<p>5 configs medidas. Líder: <strong>warmup+cosine 89,93%</strong> (exp-100m-002). Baseline plain 86,12%.</p>
+    <ul><li>Schedule &gt; blends puros em 107M + 1000 steps</li><li>Batch 12 promissoras <strong>cancelado</strong></li><li>laplacian ~84% — refutado</li></ul>`},
+  { id:5, cat:"vision", status:"current", title:"FMNIST @107M GPU — 3 configs Stack v2",
+    badge:"current", label:"AGORA",
+    body:`<p><strong>ATLAS_100M_Colab.ipynb</strong> — self-contained, sem GitHub. 3 exp × 3 seeds = 9 treinos.</p>
+    <ul><li>exp-100m-wc, exp-100m-ms, exp-100m-tri</li><li>~35–50 min A100</li><li>Decisão: stack v2 escala ou não?</li></ul>`},
+  { id:6, cat:"lm", status:"active-run", title:"LM 100M TokenBlend (PR #3)",
+    badge:"run", label:"Rodando",
+    body:`<p>Outra VM, branch cursor/lm-100m-c396. Baseline global-attn ~99,5M params.</p>
+    <ul><li>val_loss baseline ~2,24 (2 seeds)</li><li>token_blend / token_blend_ms pendentes</li><li>~5 h/seed CPU</li></ul>`},
+  { id:7, cat:"lm", status:"pending", title:"LM 230M — pré-treino + SFT",
+    badge:"future", label:"Futuro",
+    body:`<p>Pipeline: fineweb-edu → smoltalk → GRPO opcional. Arquitetura com TokenBlend vencedor.</p>
+    <ul><li>~4–8 h GPU Colab</li><li>Depende: Colab @107M + LM 100M</li></ul>`},
+  { id:8, cat:"lm", status:"future", title:"Benchmark vs Liquid LFM2.5-230M",
+    badge:"future", label:"Longo prazo",
+    body:`<p>Competir tok/s e footprint. IFEval como benchmark, não meta imediata.</p>`},
+  { id:9, cat:"vision", status:"future", title:"Escala 1B smoke + QLoRA",
+    badge:"future", label:"Futuro",
+    body:`<p>Smoke forward + QLoRA Colab A100 40GB. ~2–4 h GPU.</p>`},
+  { id:10, cat:"vision", status:"future", title:"Escala 7B QLoRA / inferência",
+    badge:"future", label:"Futuro",
+    body:`<p>Colab Pro+ 80GB. ~6–12 h. Lei de escala do mixer.</p>`},
+];
+
+const RESULTS = [
+  { bench:"fmnist", tag:"FMNIST @7200", champ:"multi_scale+LS+wc", val:"92,90%", delta:"+1,28 pp", verdict:"REVOLUCIONÁRIA" },
+  { bench:"fmnist", tag:"FMNIST A100", champ:"multi_scale+LS+wc", val:"93,37%", delta:"+2,32 pp", verdict:"CONFIRMADA" },
+  { bench:"fmnist", tag:"FMNIST @2400", champ:"blend+LS", val:"91,78%", delta:"+0,97 pp", verdict:"PROMISSORA" },
+  { bench:"cifar", tag:"CIFAR-10 v2", champ:"multi_scale_ls_wc", val:"71,06%", delta:"+3,48 pp", verdict:"CONFIRMADA" },
+  { bench:"cifar", tag:"CIFAR-10 v2", champ:"tri_scale_ls_wc", val:"71,04%", delta:"+3,45 pp", verdict:"CONFIRMADA" },
+  { bench:"cifar", tag:"CIFAR vs LIT", champ:"vs se_ls_wc", val:"69,44%", delta:"+1,62 pp", verdict:"NOVEL &gt; LIT" },
+  { bench:"100m", tag:"FMNIST @107M CPU", champ:"warmup+cosine", val:"89,93%", delta:"+3,81 pp*", verdict:"LÍDER CPU" },
+  { bench:"100m", tag:"FMNIST @107M CPU", champ:"baseline plain", val:"86,12%", delta:"régua", verdict:"BASELINE" },
+  { bench:"100m", tag:"FMNIST @107M GPU", champ:"pendente", val:"—", delta:"—", verdict:"AGUARDANDO" },
+  { bench:"fmnist", tag:"LM 100M", champ:"baseline attn", val:"~2,24 loss", delta:"—", verdict:"EM CURSO" },
+];
+
+const STEPS = [
+  { n:1, title:"Rodar ATLAS_100M_Colab.ipynb", desc:"GPU A100/H100 → Run all. Notebook self-contained (sem git). Baixar experiments_log_100m_colab.jsonl.", eta:"~40 min", urgent:true },
+  { n:2, title:"Enviar ranking da célula 5", desc:"Interpretar: ms/tri > 89,93%? → stack v2 confirmada. Só wc? → mixer não escala FMNIST 107M.", eta:"~5 min" },
+  { n:3, title:"Aguardar LM 100M (PR #3)", desc:"token_blend vs baseline global-attn. Decisão independente por val_loss.", eta:"~5–7 h" },
+  { n:4, title:"Decidir stack LM 230M", desc:"Se vision+LM confirmam multi/tri → notebook ATLAS-230M com fineweb-edu + smoltalk.", eta:"~4–8 h GPU" },
+  { n:5, title:"Benchmark vs Liquid", desc:"tok/s, footprint, IFEval-lite. Meta realista de competição.", eta:"longo prazo" },
+];
+
+const MAP_INFO = {
+  p1: "Fase 1 ✓ — 55+ exp, campeão 92,90%",
+  p2: "Fase 2 ✓ — GPU A100 + CIFAR 71,06%",
+  p3: "Fase 3 ✓ — CPU 107M parcial, wc 89,93%",
+  p4: "📍 AGORA — Colab 3 configs ~40 min",
+  p5: "Fase 5 — LM 100M em andamento",
+  p6: "Fase 6 — LM 230M vs Liquid (futuro)",
+  p5b: "Paralelo — LM 100M CPU ~5h/seed",
+};
+
+// Nav
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.getElementById(btn.dataset.sec).classList.add("active");
+  });
+});
+
+// Timeline render
+function renderTimeline(filter="all") {
+  const el = document.getElementById("timeline-list");
+  el.innerHTML = PHASES.filter(p => {
+    if (filter==="all") return true;
+    if (filter==="vision") return p.cat==="vision";
+    if (filter==="lm") return p.cat==="lm";
+    if (filter==="done") return p.status==="done";
+    if (filter==="active") return p.status==="current"||p.status==="active-run";
+    return true;
+  }).map(p => `
+    <div class="phase ${p.status} ${p.status==='current'?'open':''}" data-phase="${p.id}">
+      <div class="phase-head">
+        <span class="num">${String(p.id).padStart(2,"0")}</span>
+        <span class="title">${p.title}</span>
+        <span class="badge ${p.badge}">${p.label}</span>
+      </div>
+      <div class="phase-body">${p.body}</div>
+    </div>
+  `).join("");
+  el.querySelectorAll(".phase").forEach(ph => {
+    ph.querySelector(".phase-head").addEventListener("click", () => ph.classList.toggle("open"));
+  });
+}
+renderTimeline();
+
+document.querySelectorAll("#timeline .filter, .filters .filter[data-f]").forEach(f => {
+  f.addEventListener("click", () => {
+    document.querySelectorAll(".filters .filter[data-f]").forEach(x => x.classList.remove("on"));
+    f.classList.add("on");
+    renderTimeline(f.dataset.f);
+  });
+});
+
+// Results
+function renderResults(filter="all") {
+  const tb = document.querySelector("#results-table tbody");
+  tb.innerHTML = RESULTS.filter(r => filter==="all" || r.bench===filter).map(r => `
+    <tr>
+      <td>${r.tag}</td><td>${r.champ}</td>
+      <td class="acc">${r.val}</td>
+      <td class="${r.delta.startsWith('+')?'delta-pos':''}">${r.delta}</td>
+      <td>${r.verdict}</td>
+    </tr>
+  `).join("");
+}
+renderResults();
+
+document.querySelectorAll("#res-filters .filter").forEach(f => {
+  f.addEventListener("click", () => {
+    document.querySelectorAll("#res-filters .filter").forEach(x => x.classList.remove("on"));
+    f.classList.add("on");
+    renderResults(f.dataset.r);
+  });
+});
+
+// Steps
+document.getElementById("steps-list").innerHTML = STEPS.map(s => `
+  <div class="step-card" style="${s.urgent?'border-color:#388bfd':''}">
+    <div class="step-num">${s.n}</div>
+    <div>
+      <h4>${s.title} ${s.urgent?'<span class="badge current">URGENTE</span>':''}</h4>
+      <p>${s.desc}</p>
+    </div>
+    <div class="eta">⏱ ${s.eta}</div>
+  </div>
+`).join("");
+
+// Map tooltips
+const tip = document.getElementById("tooltip");
+document.querySelectorAll(".map-node").forEach(node => {
+  node.addEventListener("mouseenter", e => {
+    const id = node.dataset.id;
+    tip.textContent = MAP_INFO[id] || "";
+    tip.style.display = "block";
+  });
+  node.addEventListener("mousemove", e => {
+    tip.style.left = (e.clientX + 14) + "px";
+    tip.style.top = (e.clientY + 14) + "px";
+  });
+  node.addEventListener("mouseleave", () => tip.style.display = "none");
+  node.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelector('[data-sec="timeline"]').classList.add("active");
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.getElementById("timeline").classList.add("active");
+    const map = {p1:1,p2:2,p3:3,p4:5,p5:6,p5b:6,p6:7};
+    const ph = document.querySelector(`[data-phase="${map[node.dataset.id]}"]`);
+    if (ph) { ph.classList.add("open"); ph.scrollIntoView({behavior:"smooth",block:"center"}); }
+  });
+});
+</script>
+</body>
+</html>
