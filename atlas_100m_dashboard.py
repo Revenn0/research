@@ -73,13 +73,37 @@ def load_seed_results() -> dict[str, list[dict]]:
     return by_exp
 
 
-def load_live_progress() -> dict | None:
-    if not LIVE_PROGRESS.exists():
-        return None
-    try:
-        return json.loads(LIVE_PROGRESS.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
+def load_live_progress(experiment_id: str | None = None) -> dict | None:
+    if experiment_id:
+        path = RESULTS_DIR / f"_live_progress_{experiment_id}.json"
+        if path.exists():
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return None
+    if LIVE_PROGRESS.exists():
+        try:
+            return json.loads(LIVE_PROGRESS.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def load_all_live_progress() -> dict[str, dict]:
+    live: dict[str, dict] = {}
+    if not RESULTS_DIR.exists():
+        return live
+    for p in RESULTS_DIR.glob("_live_progress_exp-100m-*.json"):
+        eid = p.stem.replace("_live_progress_", "")
+        try:
+            live[eid] = json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+    legacy = load_live_progress()
+    if legacy:
+        # legado sem sufixo — associar ao experimento em execução detectado via ps
+        pass
+    return live
 
 
 def _etime_to_sec(etime: str) -> float:
@@ -99,11 +123,11 @@ def _etime_to_sec(etime: str) -> float:
     return float(int(et))
 
 
-def detect_running() -> dict | None:
+def detect_all_running() -> list[dict]:
     try:
         out = subprocess.check_output(["ps", "aux"], text=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
+        return []
 
     candidates: list[dict] = []
     for line in out.splitlines():
@@ -140,9 +164,22 @@ def detect_running() -> dict | None:
         )
 
     if not candidates:
+        return []
+
+    # Um representante por experiment_id (processo com mais CPU)
+    by_exp: dict[str, dict] = {}
+    for c in candidates:
+        eid = c.get("experiment_id") or "unknown"
+        if eid not in by_exp or c.get("cpu", 0) > by_exp[eid].get("cpu", 0):
+            by_exp[eid] = c
+    return list(by_exp.values())
+
+
+def detect_running() -> dict | None:
+    all_r = detect_all_running()
+    if not all_r:
         return None
-    # processo principal de treino costuma ter mais CPU/tempo que workers DataLoader
-    return max(candidates, key=lambda c: (c.get("cpu", 0), c.get("etime_sec", 0)))
+    return max(all_r, key=lambda c: (c.get("cpu", 0), c.get("etime_sec", 0)))
 
 
 def detect_current_exp_id(running: dict | None = None) -> str | None:
@@ -218,25 +255,15 @@ def verdict_100m(delta_pp: float | None, std_pp: float | None, eid: str) -> str:
 def build_status() -> dict:
     completed = load_completed()
     seed_results = load_seed_results()
+    running_all = detect_all_running()
+    running_by_id = {r["experiment_id"]: r for r in running_all if r.get("experiment_id")}
     running = detect_running()
     current_id = detect_current_exp_id(running)
-    live = load_live_progress()
+    all_live = load_all_live_progress()
 
     baseline_acc = None
     if "exp-100m-baseline" in completed:
         baseline_acc = completed["exp-100m-baseline"]["result"]["best_val_acc_mean"]
-
-    current_step = 0
-    current_step_pct = 0.0
-    live_val_acc = None
-    if live and running and live.get("seed") == running.get("seed"):
-        current_step = int(live.get("step", 0))
-        current_step_pct = float(live.get("step_pct", 0))
-        bva = live.get("best_val_acc")
-        live_val_acc = bva if bva not in (None, 0, 0.0) else live.get("last_val_acc")
-    elif running:
-        current_step = min(STEPS_PER_SEED, int(running.get("etime_sec", 0) / SEC_PER_STEP))
-        current_step_pct = round(100.0 * current_step / STEPS_PER_SEED, 1)
 
     rows = []
     done_count = 0
@@ -244,6 +271,20 @@ def build_status() -> dict:
         eid = meta["id"]
         entry = completed.get(eid)
         seeds = seed_results.get(eid, [])
+        run_info = running_by_id.get(eid)
+        live = all_live.get(eid) or (load_live_progress(eid) if run_info else None)
+
+        current_step = 0
+        current_step_pct = 0.0
+        live_val_acc = None
+        if live and run_info and live.get("seed") == run_info.get("seed"):
+            current_step = int(live.get("step", 0))
+            current_step_pct = float(live.get("step_pct", 0))
+            bva = live.get("best_val_acc")
+            live_val_acc = bva if bva not in (None, 0, 0.0) else live.get("last_val_acc")
+        elif run_info:
+            current_step = min(STEPS_PER_SEED, int(run_info.get("etime_sec", 0) / SEC_PER_STEP))
+            current_step_pct = round(100.0 * current_step / STEPS_PER_SEED, 1)
 
         if entry:
             status = "done"
@@ -257,7 +298,7 @@ def build_status() -> dict:
             ]
             prog_pct = 100.0
             step_info = "1000/1000 × 3 seeds"
-        elif eid == current_id:
+        elif eid in running_by_id:
             status = "running"
             acc_mean = acc_std = None
             if seeds:
@@ -267,10 +308,10 @@ def build_status() -> dict:
                 {"seed": s.get("seed"), "best_val_acc": s.get("best_val_acc"), "wall_time_s": s.get("wall_time_s")}
                 for s in seeds
             ]
-            cs = running.get("seed") if running else None
+            cs = running_by_id[eid].get("seed")
             prog_pct = compute_progress_pct("running", len(per_seed), cs, current_step)
             step_info = f"seed {cs}: step {current_step}/{STEPS_PER_SEED} ({current_step_pct}%)"
-            if live_val_acc is not None and eid == current_id:
+            if live_val_acc is not None:
                 acc_mean = live_val_acc
         else:
             status = "pending"
@@ -301,14 +342,17 @@ def build_status() -> dict:
 
     global_pct = round(sum(r["progress_pct"] for r in rows) / len(rows), 1)
 
-    batch_running = subprocess.run(
-        ["pgrep", "-f", "atlas_batch_100m"], capture_output=True, text=True
-    ).returncode == 0
+    batch_running = (
+        subprocess.run(["pgrep", "-f", "atlas_batch_100m"], capture_output=True, text=True).returncode == 0
+        or len(running_all) > 0
+    )
 
     return {
         "updated_utc": datetime.now(timezone.utc).isoformat(),
         "params_m": PARAMS_M,
         "batch_running": batch_running,
+        "parallel_running": len(running_all),
+        "running_experiments": [r.get("experiment_id") for r in running_all if r.get("experiment_id")],
         "global_progress_pct": global_pct,
         "progress": {"done": done_count, "total": len(EXPERIMENTS)},
         "baseline_acc": baseline_acc,
@@ -377,7 +421,7 @@ HTML_SHELL = """<!DOCTYPE html>
       document.getElementById('cards').innerHTML = `
         <div class="card">Global<b>${d.global_progress_pct}%</b></div>
         <div class="card">Concluídos<b>${d.progress.done}/${d.progress.total}</b></div>
-        <div class="card">Rodando<b>${d.current_experiment_id||'—'}</b>step ${d.current_step||0}/${1000}</div>
+        <div class="card">Rodando<b>${d.parallel_running||0}</b>${(d.running_experiments||[]).join(', ')||'—'}</div>
         <div class="card">Batch<b>${d.batch_running?'ATIVO':'PARADO'}</b></div>`;
       document.getElementById('global-fill').style.width = d.global_progress_pct + '%';
       document.getElementById('global-label').textContent = `Progresso global do batch: ${d.global_progress_pct}%`;

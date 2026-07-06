@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import subprocess
 import sys
@@ -37,7 +38,11 @@ def aggregate(results: list[dict]) -> dict:
 def append_log(entry: dict, log_path: Path) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        finally:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def refresh_dashboard() -> None:
@@ -57,6 +62,11 @@ def main() -> None:
     p.add_argument("--log", default="experiments_log.jsonl")
     p.add_argument("--result_dir", default="", help="grava JSON por seed para painel ao vivo")
     p.add_argument("--refresh_dashboard", action="store_true", help="atualiza painel 100M após cada seed")
+    p.add_argument(
+        "--no_refresh_dashboard",
+        action="store_true",
+        help="não atualiza painel (use em batch paralelo; watch externo refresha)",
+    )
     p.add_argument("train_args", nargs=argparse.REMAINDER, help="args passed to train_baseline.py after --")
     args = p.parse_args()
 
@@ -72,13 +82,14 @@ def main() -> None:
         cmd = base_cmd + ["--seed", str(seed)]
         if result_dir:
             out_path = result_dir / f"{args.id}_seed{seed}.json"
-            cmd += ["--result_path", str(out_path), "--progress_path", str(result_dir / "_live_progress.json")]
+            prog_path = result_dir / f"_live_progress_{args.id}.json"
+            cmd += ["--result_path", str(out_path), "--progress_path", str(prog_path)]
         r = run_one(cmd, result_path=out_path if result_dir else None)
         results.append(r)
         if result_dir:
             payload = {**r, "experiment_id": args.id, "experiment_name": args.name}
             out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        if args.refresh_dashboard:
+        if args.refresh_dashboard and not args.no_refresh_dashboard:
             refresh_dashboard()
 
     agg = aggregate(results)
@@ -95,7 +106,7 @@ def main() -> None:
         "novelty_note": args.novelty,
     }
     append_log(entry, Path(args.log))
-    if args.refresh_dashboard:
+    if args.refresh_dashboard and not args.no_refresh_dashboard:
         refresh_dashboard()
     print(json.dumps(entry, indent=2, ensure_ascii=False))
 
