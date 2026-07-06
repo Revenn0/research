@@ -437,7 +437,7 @@ class SmallCNN(nn.Module):
             x = self.pool(self.mix2(h2))
         else:
             x = self.pool(self._activate(self.mix2(h2)))
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.dropout(self._activate(self.fc_norm(self.fc1(x))))
         return self.fc2(x)
 
