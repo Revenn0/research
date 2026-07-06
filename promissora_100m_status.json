@@ -1,18 +1,18 @@
 {
-  "updated_utc": "2026-07-06T08:05:07.014990+00:00",
+  "updated_utc": "2026-07-06T08:40:27.258217+00:00",
   "params_m": 107.51,
   "batch_running": false,
-  "global_progress_pct": 7.8,
+  "global_progress_pct": 12.2,
   "progress": {
     "done": 1,
     "total": 13
   },
   "baseline_acc": null,
   "current_experiment_id": "exp-100m-002",
-  "current_seed": 1000,
-  "current_step": 25,
-  "current_step_pct": 2.5,
-  "live_val_acc": 0.0,
+  "current_seed": 1001,
+  "current_step": 750,
+  "current_step_pct": 75.0,
+  "live_val_acc": 0.872,
   "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
   "experiments": [
     {
@@ -26,6 +26,8 @@
       "best_val_acc_mean": 0.8978333333333333,
       "best_val_acc_std": 0.002615976554431115,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "INCONCLUSIVA",
       "per_seed": [
         {
           "seed": 1000,
@@ -52,13 +54,21 @@
       "label": "warmup+cosine",
       "kind": "RECOMB",
       "status": "running",
-      "progress_pct": 0.8,
-      "step_info": "seed 1000: step 25/1000 (2.5%)",
-      "best_val_acc_mean": 0.0,
+      "progress_pct": 58.3,
+      "step_info": "seed 1001: step 750/1000 (75.0%)",
+      "best_val_acc_mean": 0.872,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
-      "per_seed": [],
-      "n_seeds_done": 0,
+      "delta_pp": null,
+      "verdict": "rodando",
+      "per_seed": [
+        {
+          "seed": 1000,
+          "best_val_acc": 0.8987,
+          "wall_time_s": 1228.8415320870117
+        }
+      ],
+      "n_seeds_done": 1,
       "n_seeds_total": 3
     },
     {
@@ -72,6 +82,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -87,6 +99,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -102,6 +116,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -117,6 +133,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -132,6 +150,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -147,6 +167,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -162,6 +184,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -177,6 +201,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -192,6 +218,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -207,6 +235,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
@@ -222,6 +252,8 @@
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
+      "delta_pp": null,
+      "verdict": "pendente",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3

@@ -166,6 +166,25 @@ def fmt_delta(x: float | None) -> str:
     return f"{sign}{x * 100:.2f} pp"
 
 
+def verdict_100m(delta_pp: float | None, std_pp: float | None, eid: str) -> str:
+    if eid == "exp-100m-baseline":
+        return "BASELINE"
+    if delta_pp is None:
+        return "INCONCLUSIVA"
+    std = std_pp or 0.0
+    if delta_pp <= -1.0:
+        return "MORTA"
+    if delta_pp <= -0.5:
+        return "REFUTADA"
+    if delta_pp < 0.3 or std > 0.4:
+        return "INCONCLUSIVA"
+    if delta_pp < 0.8:
+        return "PROMISSORA"
+    if std <= 0.3:
+        return "REVOLUCIONARIA"
+    return "INCONCLUSIVA"
+
+
 def build_status() -> dict:
     completed = load_completed()
     seed_results = load_seed_results()
@@ -230,6 +249,9 @@ def build_status() -> dict:
             step_info = "aguardando"
 
         delta = (acc_mean - baseline_acc) if (acc_mean is not None and baseline_acc is not None) else None
+        delta_pp = (delta * 100) if delta is not None else None
+        std_pp = (acc_std * 100) if acc_std is not None else None
+        vrd = verdict_100m(delta_pp, std_pp, eid) if status == "done" else ("rodando" if status == "running" else "pendente")
 
         rows.append({
             **meta,
@@ -239,6 +261,8 @@ def build_status() -> dict:
             "best_val_acc_mean": acc_mean,
             "best_val_acc_std": acc_std,
             "delta_vs_baseline": delta,
+            "delta_pp": delta_pp,
+            "verdict": vrd,
             "per_seed": per_seed,
             "n_seeds_done": len(per_seed),
             "n_seeds_total": SEEDS_TOTAL,
@@ -306,7 +330,7 @@ HTML_SHELL = """<!DOCTYPE html>
   <table>
     <thead><tr>
       <th>#</th><th>ID</th><th>Mecanismo</th><th>Progresso</th><th>Status</th>
-      <th>Val Acc</th><th>Δ base</th><th>Detalhe</th>
+      <th>Val Acc</th><th>Δ base</th><th>Veredito</th><th>Detalhe</th>
     </tr></thead>
     <tbody id="tbody"></tbody>
   </table>
@@ -339,6 +363,7 @@ HTML_SHELL = """<!DOCTYPE html>
           <td><span class="badge ${cls}">${cls}</span></td>
           <td><strong>${acc}</strong></td>
           <td>${delta(e.delta_vs_baseline)}</td>
+          <td><span class="badge ${cls}">${e.verdict||cls}</span></td>
           <td><small>${e.step_info}${seeds?', '+seeds:''}</small></td></tr>`;
       }).join('');
     }
@@ -367,14 +392,25 @@ def render_md(status: dict) -> str:
         f"**Concluídos:** {status['progress']['done']}/{status['progress']['total']}",
         f"**Rodando:** {status['current_experiment_id'] or '—'} seed {status['current_seed'] or '—'} step {status['current_step']}/{STEPS_PER_SEED}",
         "",
-        "| # | ID | Mecanismo | % | Status | Val Acc | Δ base |",
-        "|---|-----|-----------|---|--------|---------|--------|",
+        "| # | ID | Mecanismo | % | Status | Val Acc | Δ base | Veredito |",
+        "|---|-----|-----------|---|--------|---------|--------|----------|",
     ]
     for i, e in enumerate(status["experiments"], 1):
         acc = fmt_pct_acc(e["best_val_acc_mean"])
         lines.append(
-            f"| {i} | {e['id']} | {e['label']} | **{e['progress_pct']}%** | {e['status']} | {acc} | {fmt_delta(e['delta_vs_baseline'])} |"
+            f"| {i} | {e['id']} | {e['label']} | **{e['progress_pct']}%** | {e['status']} | {acc} | {fmt_delta(e['delta_vs_baseline'])} | {e.get('verdict', '—')} |"
         )
+    lines.extend([
+        "",
+        "Critérios: `verdict_criteria_100m.md`",
+        "",
+        "| Veredito | Δ @100M |",
+        "|----------|---------|",
+        "| REFUTADA | ≤ −0,50 pp |",
+        "| INCONCLUSIVA | −0,49 a +0,29 pp |",
+        "| PROMISSORA | +0,30 a +0,79 pp |",
+        "| REVOLUCIONÁRIA | ≥ +0,80 pp (std ≤ 0,30) |",
+    ])
     lines.append("")
     return "\n".join(lines)
 
