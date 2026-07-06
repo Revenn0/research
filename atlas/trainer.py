@@ -40,6 +40,9 @@ class LMTrainConfig:
     log_every: int = 200
     grad_clip: float = 1.0
     warmup_steps: int = 200
+    device: str = "auto"
+    amp: bool = False
+    label_smoothing: float = 0.0
 
 
 @dataclass
@@ -61,6 +64,12 @@ def set_seed(seed: int) -> None:
     torch.manual_seed(seed)
 
 
+def resolve_device(name: str) -> torch.device:
+    if name == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(name)
+
+
 def lr_at_step(cfg: LMTrainConfig, step: int) -> float:
     if cfg.schedule == "none":
         return cfg.lr
@@ -76,22 +85,29 @@ def lr_at_step(cfg: LMTrainConfig, step: int) -> float:
 
 
 @torch.no_grad()
-def evaluate(model: CharLM, data: torch.Tensor, block_size: int, batch: int) -> float:
+def evaluate(
+    model: CharLM, data: torch.Tensor, block_size: int, batch: int, device: torch.device
+) -> float:
     model.eval()
     losses = []
     n_eval = min(20, max(1, (len(data) - block_size - 1) // batch))
     for start in range(0, n_eval * batch, batch):
         idx = torch.arange(start, start + batch)
-        x = torch.stack([data[i : i + block_size] for i in idx])
-        y = torch.stack([data[i + 1 : i + block_size + 1] for i in idx])
+        x = torch.stack([data[i : i + block_size] for i in idx]).to(device)
+        y = torch.stack([data[i + 1 : i + block_size + 1] for i in idx]).to(device)
         _, loss = model(x, y)
         losses.append(loss.item())
     return float(sum(losses) / len(losses))
 
 
 def train_lm(cfg: LMTrainConfig) -> LMTrainResult:
-    torch.set_num_threads(2)
     set_seed(cfg.seed)
+    device = resolve_device(cfg.device)
+    use_amp = cfg.amp and device.type == "cuda"
+    if device.type == "cpu":
+        torch.set_num_threads(2)
+    if device.type == "cuda":
+        torch.backends.cuda.matmul.allow_tf32 = True
     t0 = time.time()
 
     train_ds, val_ds = load_train_val(cfg.data_path)
@@ -108,7 +124,7 @@ def train_lm(cfg: LMTrainConfig) -> LMTrainResult:
         mixing=cfg.mixing,
         norm=cfg.norm,
         activation=cfg.activation,
-    )
+    ).to(device)
     opt = build_optimizer(cfg.optimizer, model.parameters(), cfg.lr, cfg.weight_decay)
 
     val_losses: list[float] = []
@@ -122,8 +138,10 @@ def train_lm(cfg: LMTrainConfig) -> LMTrainResult:
             pg["lr"] = lr
 
         x, y = random_batch(train_ds.data, cfg.block_size, cfg.batch)
-        _, loss = model(x, y)
+        x, y = x.to(device), y.to(device)
         opt.zero_grad(set_to_none=True)
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_amp):
+            _, loss = model(x, y)
         loss.backward()
         if cfg.grad_clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
@@ -131,12 +149,12 @@ def train_lm(cfg: LMTrainConfig) -> LMTrainResult:
         train_loss = loss.item()
 
         if step % cfg.eval_every == 0 or step == cfg.total_steps:
-            vloss = evaluate(model, val_ds.data, cfg.block_size, cfg.batch)
+            vloss = evaluate(model, val_ds.data, cfg.block_size, cfg.batch, device)
             val_losses.append(vloss)
             best_val = min(best_val, vloss)
 
     wall = time.time() - t0
-    final_val = evaluate(model, val_ds.data, cfg.block_size, cfg.batch)
+    final_val = evaluate(model, val_ds.data, cfg.block_size, cfg.batch, device)
     best_val = min(best_val, final_val)
 
     return LMTrainResult(

@@ -35,6 +35,43 @@ class CausalSelfAttention(nn.Module):
         return self.dropout(self.proj(y))
 
 
+class CausalTokenBlend(nn.Module):
+    """NOVEL: mixing O(T) causal — depthwise conv1d + gate (sem QKV)."""
+
+    def __init__(self, n_embd: int, kernel: int = 3, dropout: float = 0.0) -> None:
+        super().__init__()
+        self.kernel = kernel
+        self.dw = nn.Conv1d(n_embd, n_embd, kernel, padding=0, groups=n_embd, bias=False)
+        nn.init.dirac_(self.dw.weight)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = F.pad(x.transpose(1, 2), (self.kernel - 1, 0))
+        local = self.dw(h).transpose(1, 2)
+        gate = torch.sigmoid(x.mean(dim=1, keepdim=True))
+        return self.dropout(gate * local + (1.0 - gate) * x)
+
+
+class CausalTokenBlendMS(nn.Module):
+    """NOVEL: multi-scale causal token blend (kernels 3 + 5)."""
+
+    def __init__(self, n_embd: int, dropout: float = 0.0) -> None:
+        super().__init__()
+        self.dw3 = nn.Conv1d(n_embd, n_embd, 3, padding=0, groups=n_embd, bias=False)
+        self.dw5 = nn.Conv1d(n_embd, n_embd, 5, padding=0, groups=n_embd, bias=False)
+        nn.init.dirac_(self.dw3.weight)
+        nn.init.dirac_(self.dw5.weight)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = x.transpose(1, 2)
+        h3 = self.dw3(F.pad(h, (2, 0)))
+        h5 = self.dw5(F.pad(h, (4, 0)))
+        local = (0.5 * h3 + 0.5 * h5).transpose(1, 2)
+        gate = torch.sigmoid(x.mean(dim=1, keepdim=True))
+        return self.dropout(gate * local + (1.0 - gate) * x)
+
+
 class LongConvFFT(nn.Module):
     """Causal depthwise long convolution via FFT (pad to 2T-1, truncate to T)."""
 
@@ -95,6 +132,10 @@ class Block(nn.Module):
             self.mixer = CausalSelfAttention(n_embd, n_head, dropout, block_size)
         elif mixing == "long-conv-fft":
             self.mixer = LongConvFFT(n_embd, kernel_size=block_size, dropout=dropout)
+        elif mixing == "token_blend":
+            self.mixer = CausalTokenBlend(n_embd, kernel=3, dropout=dropout)
+        elif mixing == "token_blend_ms":
+            self.mixer = CausalTokenBlendMS(n_embd, dropout=dropout)
         else:
             raise ValueError(f"Unknown mixing: {mixing}")
         self.ff = nn.Sequential(
