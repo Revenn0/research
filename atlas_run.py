@@ -36,6 +36,12 @@ def append_log(entry: dict, log_path: Path) -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def refresh_dashboard() -> None:
+    script = Path(__file__).resolve().parent / "atlas_100m_dashboard.py"
+    if script.exists():
+        subprocess.run([sys.executable, str(script)], check=False)
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--id", required=True)
@@ -45,17 +51,31 @@ def main() -> None:
     p.add_argument("--novelty", default="")
     p.add_argument("--seeds", type=int, default=3)
     p.add_argument("--log", default="experiments_log.jsonl")
+    p.add_argument("--result_dir", default="", help="grava JSON por seed para painel ao vivo")
+    p.add_argument("--refresh_dashboard", action="store_true", help="atualiza painel 100M após cada seed")
     p.add_argument("train_args", nargs=argparse.REMAINDER, help="args passed to train_baseline.py after --")
     args = p.parse_args()
 
     train_args = [a for a in args.train_args if a != "--"]
     base_cmd = [sys.executable, "train_baseline.py"] + train_args
+    result_dir = Path(args.result_dir) if args.result_dir else None
+    if result_dir:
+        result_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
     for i in range(args.seeds):
         seed = 1000 + i
         cmd = base_cmd + ["--seed", str(seed)]
-        results.append(run_one(cmd))
+        if result_dir:
+            out_path = result_dir / f"{args.id}_seed{seed}.json"
+            cmd += ["--result_path", str(out_path)]
+        r = run_one(cmd)
+        results.append(r)
+        if result_dir:
+            payload = {**r, "experiment_id": args.id, "experiment_name": args.name}
+            out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        if args.refresh_dashboard:
+            refresh_dashboard()
 
     agg = aggregate(results)
     entry = {
@@ -71,6 +91,8 @@ def main() -> None:
         "novelty_note": args.novelty,
     }
     append_log(entry, Path(args.log))
+    if args.refresh_dashboard:
+        refresh_dashboard()
     print(json.dumps(entry, indent=2, ensure_ascii=False))
 
 

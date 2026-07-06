@@ -676,7 +676,7 @@ def train(cfg: TrainConfig) -> TrainResult:
     )
 
 
-def parse_args() -> TrainConfig:
+def parse_args() -> tuple[TrainConfig, str]:
     p = argparse.ArgumentParser(description="ATLAS baseline trainer")
     p.add_argument("--grad_centralize", action="store_true", default=False)
     p.add_argument("--amp", action="store_true", default=False)
@@ -702,18 +702,25 @@ def parse_args() -> TrainConfig:
         ("eval_every", int),
     ]:
         p.add_argument(f"--{f_name}", type=f_type, default=getattr(TrainConfig(), f_name))
+    p.add_argument("--result_path", type=str, default="", help="opcional: grava JSON do resultado ao terminar")
     for f_name in ["optimizer", "scheduler", "activation", "norm", "mixing", "data_dir", "arch", "vit_mixer", "device"]:
         p.add_argument(f"--{f_name}", type=str, default=getattr(TrainConfig(), f_name))
     for f_name in ["vit_dim", "vit_depth", "vit_heads"]:
         p.add_argument(f"--{f_name}", type=int, default=getattr(TrainConfig(), f_name))
     args = p.parse_args()
-    return TrainConfig(**vars(args))
+    d = vars(args)
+    result_path = d.pop("result_path", "")
+    return TrainConfig(**d), result_path
 
 
 def main() -> None:
-    cfg = parse_args()
+    cfg, result_path = parse_args()
     result = train(cfg)
-    print(json.dumps(asdict(result), indent=2))
+    payload = asdict(result)
+    print(json.dumps(payload, indent=2))
+    if result_path:
+        Path(result_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(result_path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

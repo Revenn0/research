@@ -21,7 +21,12 @@ assert 95e6 <= n <= 115e6, f"Fora da faixa 100M: {n/1e6:.1f}M"
 print("OK: modelo dentro da faixa ~100M")
 EOF
 
-run() { python3 atlas_run.py "$@"; }
+run() {
+  python3 atlas_run.py "$@" \
+    --result_dir results/100m \
+    --refresh_dashboard
+  python3 atlas_100m_dashboard.py
+}
 
 SCALE="--width_mult 16.0 --hidden_dim 2048 --batch_size 64 --lr 0.001 --weight_decay 1e-4 --device cpu --num_workers 2"
 S1000="--steps 1000 --eval_every 250 --log_every 200"
