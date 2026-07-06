@@ -1,23 +1,23 @@
 {
-  "updated_utc": "2026-07-06T15:45:06.144685+00:00",
+  "updated_utc": "2026-07-06T16:08:00.166762+00:00",
   "params_m": 107.51,
   "batch_running": true,
   "parallel_running": 1,
   "running_experiments": [
     "exp-100m-006"
   ],
-  "global_progress_pct": 39.1,
+  "global_progress_pct": 41.4,
   "progress": {
     "done": 5,
     "total": 13
   },
   "baseline_acc": null,
   "current_experiment_id": "exp-100m-006",
-  "current_seed": 1000,
+  "current_seed": 1001,
   "current_step": 0,
   "current_step_pct": 0.0,
   "live_val_acc": null,
-  "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
+  "eta_note": "~35–40 min/seed · refresh a cada 60s",
   "experiments": [
     {
       "id": "exp-100m-001",
@@ -190,15 +190,21 @@
       "label": "laplacian_blend",
       "kind": "NOVEL",
       "status": "running",
-      "progress_pct": 8.3,
-      "step_info": "seed 1000: step 250/1000 (25.0%)",
-      "best_val_acc_mean": null,
+      "progress_pct": 38.3,
+      "step_info": "seed 1001: step 150/1000 (15.0%)",
+      "best_val_acc_mean": 0.8915,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
       "delta_pp": null,
       "verdict": "rodando",
-      "per_seed": [],
-      "n_seeds_done": 0,
+      "per_seed": [
+        {
+          "seed": 1000,
+          "best_val_acc": 0.8915,
+          "wall_time_s": 1571.77676441503
+        }
+      ],
+      "n_seeds_done": 1,
       "n_seeds_total": 3
     },
     {

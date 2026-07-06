@@ -1,0 +1,68 @@
+{
+  "updated_utc": "2026-07-06T16:08:00.207292+00:00",
+  "dataset": "tinyshakespeare (char-level)",
+  "params_m_baseline": 99.53,
+  "batch_running": false,
+  "global_progress_pct": 0.0,
+  "progress": {
+    "done": 0,
+    "total": 3
+  },
+  "baseline_loss": null,
+  "current_experiment_id": "exp-lm-100m-baseline",
+  "current_seed": null,
+  "current_step": 0,
+  "current_step_pct": 0.0,
+  "live_val_loss": null,
+  "eta_note": "~5 h/seed CPU · refresh a cada 10s (fallback 60s) · calculando…",
+  "experiments": [
+    {
+      "id": "exp-lm-100m-baseline",
+      "label": "global-attn (baseline)",
+      "mixing": "global-attn",
+      "params_m": 99.53,
+      "kind": "BASELINE",
+      "status": "running",
+      "progress_pct": 0.0,
+      "step_info": "seed None: step 0/1000 (0.0%)",
+      "best_val_loss_mean": null,
+      "best_val_loss_std": null,
+      "delta_vs_baseline": null,
+      "per_seed": [],
+      "n_seeds_done": 0,
+      "n_seeds_total": 3
+    },
+    {
+      "id": "exp-lm-100m-tokenblend",
+      "label": "token_blend k=3",
+      "mixing": "token_blend",
+      "params_m": 74.76,
+      "kind": "NOVEL",
+      "status": "pending",
+      "progress_pct": 0.0,
+      "step_info": "aguardando",
+      "best_val_loss_mean": null,
+      "best_val_loss_std": null,
+      "delta_vs_baseline": null,
+      "per_seed": [],
+      "n_seeds_done": 0,
+      "n_seeds_total": 3
+    },
+    {
+      "id": "exp-lm-100m-tokenblend-ms",
+      "label": "token_blend_ms 3+5",
+      "mixing": "token_blend_ms",
+      "params_m": 74.81,
+      "kind": "NOVEL",
+      "status": "pending",
+      "progress_pct": 0.0,
+      "step_info": "aguardando",
+      "best_val_loss_mean": null,
+      "best_val_loss_std": null,
+      "delta_vs_baseline": null,
+      "per_seed": [],
+      "n_seeds_done": 0,
+      "n_seeds_total": 3
+    }
+  ]
+}

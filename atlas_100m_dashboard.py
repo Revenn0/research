@@ -361,7 +361,7 @@ def build_status() -> dict:
         "current_step": current_step,
         "current_step_pct": current_step_pct,
         "live_val_acc": live_val_acc,
-        "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
+        "eta_note": "~35–40 min/seed · refresh a cada 60s",
         "experiments": rows,
     }
 
@@ -370,6 +370,7 @@ HTML_SHELL = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8"/>
+  <meta http-equiv="refresh" content="60"/>
   <title>ATLAS 100M — 12 Promissoras</title>
   <style>
     :root { font-family: system-ui, sans-serif; background: #0f1117; color: #e6edf3; }
@@ -379,6 +380,7 @@ HTML_SHELL = """<!DOCTYPE html>
     .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
     .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; min-width: 140px; }
     .card b { display: block; font-size: 1.3rem; }
+    .card small { color: #8b949e; font-size: 0.75rem; display: block; margin-top: 4px; }
     .global-bar { height: 14px; background: #21262d; border-radius: 7px; overflow: hidden; margin: 12px 0 20px; }
     .global-bar > div { height: 100%; background: linear-gradient(90deg,#238636,#3fb950); transition: width .5s; }
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
@@ -392,8 +394,13 @@ HTML_SHELL = """<!DOCTYPE html>
     .badge.done { background: #238636; }
     .badge.running { background: #9e6a03; }
     .badge.pending { background: #30363d; color: #8b949e; }
+    .badge.novel { background: #1f3d5c; color: #79c0ff; font-size: 0.65rem; margin-left: 4px; }
+    .badge.recomb { background: #3d2a1f; color: #ffa657; font-size: 0.65rem; margin-left: 4px; }
+    .badge.baseline { background: #30363d; color: #8b949e; font-size: 0.65rem; margin-left: 4px; }
     #clock { color: #3fb950; font-weight: 600; }
     .err { color: #f85149; }
+    .better { color: #3fb950; }
+    .worse { color: #f85149; }
   </style>
 </head>
 <body>
@@ -404,7 +411,7 @@ HTML_SHELL = """<!DOCTYPE html>
   <p id="global-label" style="margin-top:-12px;color:#8b949e;font-size:0.85rem"></p>
   <table>
     <thead><tr>
-      <th>#</th><th>ID</th><th>Mecanismo</th><th>Progresso</th><th>Status</th>
+      <th>#</th><th>ID</th><th>Mecanismo</th><th>Params</th><th>Progresso</th><th>Status</th>
       <th>Val Acc</th><th>Δ base</th><th>Veredito</th><th>Detalhe</th>
     </tr></thead>
     <tbody id="tbody"></tbody>
@@ -414,18 +421,27 @@ HTML_SHELL = """<!DOCTYPE html>
     function pct(x) { return (x == null) ? '—' : (x*100).toFixed(2)+'%'; }
     function delta(x) {
       if (x == null) return '—';
-      return (x>=0?'+':'') + (x*100).toFixed(2) + ' pp';
+      const cls = x >= 0 ? 'better' : 'worse';
+      const sign = x >= 0 ? '+' : '';
+      return `<span class="${cls}">${sign}${(x*100).toFixed(2)} pp</span>`;
+    }
+    function kindBadge(k) {
+      if (k === 'NOVEL') return '<span class="badge novel">NOVEL</span>';
+      if (k === 'RECOMB') return '<span class="badge recomb">RECOMB</span>';
+      if (k === 'BASELINE') return '<span class="badge baseline">BASELINE</span>';
+      return '';
     }
     function render(d) {
       document.getElementById('clock').textContent = 'atualizado ' + d.updated_utc.replace('T',' ').slice(0,19) + ' UTC';
+      const cur = (d.running_experiments && d.running_experiments.length) ? d.running_experiments.join(', ') : (d.current_experiment_id || '—');
       document.getElementById('cards').innerHTML = `
         <div class="card">Global<b>${d.global_progress_pct}%</b></div>
         <div class="card">Concluídos<b>${d.progress.done}/${d.progress.total}</b></div>
-        <div class="card">Rodando<b>${d.parallel_running||0}</b>${(d.running_experiments||[]).join(', ')||'—'}</div>
+        <div class="card">Rodando<b>${cur}</b><small>step ${d.current_step||0}/1000 · seed ${d.current_seed||'—'}</small></div>
         <div class="card">Batch<b>${d.batch_running?'ATIVO':'PARADO'}</b></div>`;
       document.getElementById('global-fill').style.width = d.global_progress_pct + '%';
       document.getElementById('global-label').textContent = `Progresso global do batch: ${d.global_progress_pct}%`;
-      document.getElementById('footer').textContent = d.eta_note;
+      document.getElementById('footer').textContent = d.eta_note + ' · métrica: maior val_acc = melhor · Δ positivo = melhor que baseline';
       const tb = document.getElementById('tbody');
       tb.innerHTML = d.experiments.map((e,i) => {
         const cls = e.status;
@@ -433,7 +449,8 @@ HTML_SHELL = """<!DOCTYPE html>
         const acc = e.best_val_acc_mean!=null ? pct(e.best_val_acc_mean) : (d.live_val_acc!=null && e.status==='running' ? pct(d.live_val_acc)+' (live)' : '—');
         const seeds = e.per_seed.map(s => `s${s.seed}:${(s.best_val_acc*100).toFixed(1)}%`).join(', ');
         return `<tr class="${cls}">
-          <td>${i+1}</td><td><code>${e.id}</code></td><td>${e.label}</td>
+          <td>${i+1}</td><td><code>${e.id}</code>${kindBadge(e.kind)}</td><td>${e.label}</td>
+          <td>${d.params_m}M</td>
           <td><span class="${pcls}"><div style="width:${e.progress_pct}%"></div></span><strong>${e.progress_pct}%</strong></td>
           <td><span class="badge ${cls}">${cls}</span></td>
           <td><strong>${acc}</strong></td>
@@ -452,7 +469,7 @@ HTML_SHELL = """<!DOCTYPE html>
       }
     }
     refresh();
-    setInterval(refresh, 5000);
+    setInterval(refresh, 10000);
   </script>
 </body>
 </html>"""
@@ -493,8 +510,7 @@ def render_md(status: dict) -> str:
 def main() -> None:
     status = build_status()
     STATUS_JSON.write_text(json.dumps(status, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    if not DASHBOARD_HTML.exists() or "setInterval(refresh" not in DASHBOARD_HTML.read_text(encoding="utf-8"):
-        DASHBOARD_HTML.write_text(HTML_SHELL, encoding="utf-8")
+    DASHBOARD_HTML.write_text(HTML_SHELL, encoding="utf-8")
     TRACKER_MD.write_text(render_md(status), encoding="utf-8")
     print(f"global={status['global_progress_pct']}% done={status['progress']['done']}/{status['progress']['total']} step={status['current_step']}")
 
