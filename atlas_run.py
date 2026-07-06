@@ -12,7 +12,11 @@ from pathlib import Path
 from statistics import mean, stdev
 
 
-def run_one(cmd: list[str]) -> dict:
+def run_one(cmd: list[str], result_path: Path | None = None) -> dict:
+    """Executa train_baseline.py; lê JSON do arquivo se result_path existir (evita deadlock de pipe)."""
+    if result_path is not None:
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
+        return json.loads(result_path.read_text(encoding="utf-8"))
     proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return json.loads(proc.stdout)
 
@@ -69,7 +73,7 @@ def main() -> None:
         if result_dir:
             out_path = result_dir / f"{args.id}_seed{seed}.json"
             cmd += ["--result_path", str(out_path), "--progress_path", str(result_dir / "_live_progress.json")]
-        r = run_one(cmd)
+        r = run_one(cmd, result_path=out_path if result_dir else None)
         results.append(r)
         if result_dir:
             payload = {**r, "experiment_id": args.id, "experiment_name": args.name}
