@@ -1,17 +1,17 @@
 {
-  "updated_utc": "2026-07-06T13:45:16.743381+00:00",
+  "updated_utc": "2026-07-06T15:44:55.847291+00:00",
   "params_m": 107.51,
   "batch_running": true,
-  "global_progress_pct": 28.3,
+  "global_progress_pct": 39.1,
   "progress": {
-    "done": 3,
+    "done": 5,
     "total": 13
   },
   "baseline_acc": null,
-  "current_experiment_id": "exp-100m-004",
-  "current_seed": 1002,
-  "current_step": 25,
-  "current_step_pct": 2.5,
+  "current_experiment_id": "exp-100m-006",
+  "current_seed": 1000,
+  "current_step": 250,
+  "current_step_pct": 25.0,
   "live_val_acc": null,
   "eta_note": "~35–40 min/seed · refresh automático a cada 5s",
   "experiments": [
@@ -119,14 +119,14 @@
       "orig": "exp-018",
       "label": "local_blend",
       "kind": "NOVEL",
-      "status": "running",
-      "progress_pct": 67.5,
-      "step_info": "seed 1002: step 25/1000 (2.5%)",
-      "best_val_acc_mean": 0.8868,
-      "best_val_acc_std": null,
+      "status": "done",
+      "progress_pct": 100.0,
+      "step_info": "1000/1000 × 3 seeds",
+      "best_val_acc_mean": 0.8898666666666667,
+      "best_val_acc_std": 0.00546839403603413,
       "delta_vs_baseline": null,
       "delta_pp": null,
-      "verdict": "rodando",
+      "verdict": "INCONCLUSIVA",
       "per_seed": [
         {
           "seed": 1000,
@@ -137,9 +137,14 @@
           "seed": 1001,
           "best_val_acc": 0.8855,
           "wall_time_s": 1685.9411013699719
+        },
+        {
+          "seed": 1002,
+          "best_val_acc": 0.896,
+          "wall_time_s": 1799.5596393400338
         }
       ],
-      "n_seeds_done": 2,
+      "n_seeds_done": 3,
       "n_seeds_total": 3
     },
     {
@@ -147,16 +152,32 @@
       "orig": "exp-021",
       "label": "local_blend_k5",
       "kind": "NOVEL",
-      "status": "pending",
-      "progress_pct": 0.0,
-      "step_info": "aguardando",
-      "best_val_acc_mean": null,
-      "best_val_acc_std": null,
+      "status": "done",
+      "progress_pct": 100.0,
+      "step_info": "1000/1000 × 3 seeds",
+      "best_val_acc_mean": 0.8903333333333333,
+      "best_val_acc_std": 0.005024274408641836,
       "delta_vs_baseline": null,
       "delta_pp": null,
-      "verdict": "pendente",
-      "per_seed": [],
-      "n_seeds_done": 0,
+      "verdict": "INCONCLUSIVA",
+      "per_seed": [
+        {
+          "seed": 1000,
+          "best_val_acc": 0.8869,
+          "wall_time_s": 1763.8498637599987
+        },
+        {
+          "seed": 1001,
+          "best_val_acc": 0.888,
+          "wall_time_s": 1631.0796563139884
+        },
+        {
+          "seed": 1002,
+          "best_val_acc": 0.8961,
+          "wall_time_s": 1646.8096723830095
+        }
+      ],
+      "n_seeds_done": 3,
       "n_seeds_total": 3
     },
     {
@@ -164,14 +185,14 @@
       "orig": "exp-022",
       "label": "laplacian_blend",
       "kind": "NOVEL",
-      "status": "pending",
-      "progress_pct": 0.0,
-      "step_info": "aguardando",
+      "status": "running",
+      "progress_pct": 8.3,
+      "step_info": "seed 1000: step 250/1000 (25.0%)",
       "best_val_acc_mean": null,
       "best_val_acc_std": null,
       "delta_vs_baseline": null,
       "delta_pp": null,
-      "verdict": "pendente",
+      "verdict": "rodando",
       "per_seed": [],
       "n_seeds_done": 0,
       "n_seeds_total": 3
