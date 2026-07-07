@@ -238,7 +238,7 @@ class LiquidGatedShortConv(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, c = x.shape
         b_gate, c_gate, h = self.in_proj(x).split(c, dim=-1)
-        u = b_gate * torch.silu(h)
+        u = b_gate * F.silu(h)
         u = F.pad(u.transpose(1, 2), (self.kernel - 1, 0))
         y = self.dw(u).transpose(1, 2)
         out = c_gate * y
