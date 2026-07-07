@@ -1,0 +1,16 @@
+=== ATLAS vision explore — 2026-07-07T06:39:42Z ===
+
+=== RANKING ===
+Rank  ID                          Acc   Δ base
+--------------------------------------------------
+1     explore-cosine-gate      91.51%   +5.50pp
+2     explore-ms-ls-wc         90.71%   +4.70pp
+3     explore-tri-ls-wc        90.54%   +4.53pp
+4     explore-mixup-ms         90.35%   +4.34pp
+5     explore-wc               89.87%   +3.86pp
+6     explore-local-blend      88.59%   +2.58pp
+7     explore-baseline         86.01%   +0.00pp
+8     explore-hybrid           78.97%   -7.04pp
+
+>>> INTERESSANTE: explore-cosine-gate ganha +5.50pp vs baseline
+=== FIM 2026-07-07T10:20:09Z ===
