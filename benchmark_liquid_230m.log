@@ -1,0 +1,48 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Benchmark ATLAS-LM 230M vs Liquid AI 230M
+{
+  "seq_len": 128,
+  "train_steps": 200,
+  "eval_batches": 40,
+  "batch_size": 1,
+  "lr": 0.0003,
+  "seed": 42,
+  "device": "cpu",
+  "threads": 2
+}
+Carregando tokenizer e WikiText-2...
+  train tokens: 200,000 | val tokens: 80,000 | bos_id=1
+  LFM2 config: layers=14, hidden=1024, layer_types=['conv', 'conv', 'full_attention', 'conv', 'full_attention', 'conv', 'full_attention', 'conv', 'full_attention', 'conv', 'full_attention', 'conv', 'full_attention', 'conv']
+
+=== Liquid LFM2.5-230M-Base (pré-treinado) ===
+Loading weights:   0%|          | 0/132 [00:00<?, ?it/s]Loading weights: 100%|██████████| 132/132 [00:00<00:00, 1508.94it/s]
+  PPL=60.46 loss=4.1019 fwd=646 tok/s
+
+=== ATLAS-LM 230M normal (LFM2 hybrid, from scratch) ===
+  [atlas_lfm2_hybrid_scratch] step 50/200 loss=8.3161
+  [atlas_lfm2_hybrid_scratch] step 100/200 loss=7.8026
+  [atlas_lfm2_hybrid_scratch] step 150/200 loss=6.6818
+  [atlas_lfm2_hybrid_scratch] step 200/200 loss=6.8201
+  PPL=1411.67 loss=7.2525 train=0.760 steps/s
+
+=== ATLAS-LM 230M ablation (100% full_attention, from scratch) ===
+  [atlas_lfm2_pure_attn_scratch] step 50/200 loss=8.1818
+  [atlas_lfm2_pure_attn_scratch] step 100/200 loss=7.5784
+  [atlas_lfm2_pure_attn_scratch] step 150/200 loss=6.5525
+  [atlas_lfm2_pure_attn_scratch] step 200/200 loss=7.0473
+  PPL=1874.11 loss=7.5359 train=0.753 steps/s
+
+=== RESUMO ===
+{
+  "liquid_pretrained_ppl": 60.457641558121004,
+  "atlas_hybrid_scratch_ppl": 1411.6748293131823,
+  "atlas_pure_attn_scratch_ppl": 1874.1122594264123,
+  "hybrid_vs_pure_attn_delta_ppl": -462.43743011323,
+  "hybrid_train_speedup_vs_pure_attn": 1.008190546339734,
+  "hybrid_forward_speedup_vs_pure_attn": 1.015385915418147,
+  "liquid_forward_tok_per_s": 645.9917009212829,
+  "atlas_hybrid_forward_tok_per_s": 638.2761401853514
+}
+
+Salvo em benchmark_liquid_230m_results.json

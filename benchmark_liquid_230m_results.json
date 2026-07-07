@@ -1,0 +1,78 @@
+{
+  "protocol": {
+    "dataset": "WikiText-2-raw-v1",
+    "tokenizer": "LiquidAI/LFM2.5-230M-Base",
+    "seq_len": 128,
+    "train_steps": 200,
+    "eval_batches": 40,
+    "device": "cpu",
+    "bos_prefix": true,
+    "note": "Liquid \u00e9 pr\u00e9-treinado (28T tokens); ATLAS from-scratch usa mesma arquitetura LFM2."
+  },
+  "models": {
+    "liquid_pretrained": {
+      "params_m": 229.693184,
+      "architecture": "LFM2 hybrid (8 conv + 6 full_attention)",
+      "pretrained": true,
+      "loss": 4.10194298028946,
+      "perplexity": 60.457641558121004,
+      "tokens_evaluated": 5120,
+      "eval_wall_s": 8.1120445728302,
+      "eval_tok_per_s": 631.1602400643233,
+      "forward_iters": 5,
+      "forward_wall_s": 0.9907248020172119,
+      "forward_tok_per_s": 645.9917009212829,
+      "peak_rss_mb": 2826.86328125
+    },
+    "atlas_lfm2_hybrid_scratch": {
+      "name": "atlas_lfm2_hybrid_scratch",
+      "params_m": 229.693184,
+      "train_steps": 200,
+      "train_wall_s": 263.3221592903137,
+      "train_steps_per_s": 0.7595258999053673,
+      "final_train_loss": 6.82011079788208,
+      "mean_train_loss": 7.516396441459656,
+      "loss": 7.25253210067749,
+      "perplexity": 1411.6748293131823,
+      "tokens_evaluated": 5120,
+      "eval_wall_s": 8.312469244003296,
+      "eval_tok_per_s": 615.9421285911671,
+      "peak_rss_mb": 5778.828125,
+      "architecture": "LFM2 hybrid (id\u00eantico ao Liquid)",
+      "pretrained": false,
+      "forward_iters": 5,
+      "forward_wall_s": 1.0027008056640625,
+      "forward_tok_per_s": 638.2761401853514
+    },
+    "atlas_lfm2_pure_attn_scratch": {
+      "name": "atlas_lfm2_pure_attn_scratch",
+      "params_m": 221.281024,
+      "train_steps": 200,
+      "train_wall_s": 265.4789116382599,
+      "train_steps_per_s": 0.7533555067173053,
+      "final_train_loss": 7.047260284423828,
+      "mean_train_loss": 7.646143751144409,
+      "loss": 7.535890364646912,
+      "perplexity": 1874.1122594264123,
+      "tokens_evaluated": 5120,
+      "eval_wall_s": 8.046244382858276,
+      "eval_tok_per_s": 636.3217118917803,
+      "peak_rss_mb": 5778.828125,
+      "architecture": "LFM2 100% full_attention",
+      "pretrained": false,
+      "forward_iters": 5,
+      "forward_wall_s": 0.9875071048736572,
+      "forward_tok_per_s": 648.0966028916646
+    }
+  },
+  "summary": {
+    "liquid_pretrained_ppl": 60.457641558121004,
+    "atlas_hybrid_scratch_ppl": 1411.6748293131823,
+    "atlas_pure_attn_scratch_ppl": 1874.1122594264123,
+    "hybrid_vs_pure_attn_delta_ppl": -462.43743011323,
+    "hybrid_train_speedup_vs_pure_attn": 1.008190546339734,
+    "hybrid_forward_speedup_vs_pure_attn": 1.015385915418147,
+    "liquid_forward_tok_per_s": 645.9917009212829,
+    "atlas_hybrid_forward_tok_per_s": 638.2761401853514
+  }
+}
