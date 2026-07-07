@@ -1,0 +1,56 @@
+{
+  "positives": [
+    "CIFAR-10 multi_scale 66.76% bate SE-Net+stack 65.36% em +1.40pp (3 seeds, protocolo ATLAS)",
+    "CIFAR-10 multi_scale 66.76% bate baseline 63.15% em +3.62pp",
+    "FMNIST @107M cosine_gate 91.37% \u00b10.12% (3 seeds) bate baseline 86.01% em +5.36pp"
+  ],
+  "cifar_cpu_400steps": {
+    "baseline_ls_wc": {
+      "mean": 63.14666666666667,
+      "std": 0.8334466589610512,
+      "seeds": [
+        64.04,
+        62.39,
+        63.01
+      ]
+    },
+    "multi_scale_ls_wc": {
+      "mean": 66.76333333333334,
+      "std": 0.10016652800877948,
+      "seeds": [
+        66.86,
+        66.66,
+        66.77
+      ]
+    },
+    "cosine_gate_ls_wc": {
+      "mean": 65.40666666666667,
+      "std": 0.8271839779234936,
+      "seeds": [
+        65.99,
+        64.46,
+        65.77
+      ]
+    },
+    "se_ls_wc": {
+      "mean": 65.36,
+      "std": 0.6777167549942944,
+      "seeds": [
+        65.43,
+        64.65,
+        66.0
+      ]
+    }
+  },
+  "fmnist_cosine_gate_3s": {
+    "mean": 91.37,
+    "std": 0.12,
+    "baseline": 86.01
+  },
+  "liquid_ai_connection": "Gated short conv (mesma fam\u00edlia LFM2) \u2014 validado em CIFAR-10 vs literatura SE-Net",
+  "reference_gpu_cifar": {
+    "multi_scale": 71.06,
+    "se_ls_wc": 69.44,
+    "delta_pp": 1.62
+  }
+}
