@@ -56,21 +56,19 @@ def load_wikitext_split(split: str) -> list[str]:
 
 
 def tokenize_corpus(tokenizer, texts: list[str], max_tokens: int | None = None) -> torch.Tensor:
-    joined = "\n".join(texts)
+    joined = "\n\n".join(texts)
     ids = tokenizer(joined, return_tensors="pt", add_special_tokens=False)["input_ids"][0]
     if max_tokens is not None:
         ids = ids[:max_tokens]
     return ids
 
 
-def make_batches(data: torch.Tensor, seq_len: int, batch_size: int, n_batches: int) -> list[tuple[torch.Tensor, torch.Tensor]]:
+def make_batches(data: torch.Tensor, seq_len: int, batch_size: int, n_batches: int) -> list[torch.Tensor]:
     max_start = len(data) - seq_len - 1
-    batches: list[tuple[torch.Tensor, torch.Tensor]] = []
+    batches: list[torch.Tensor] = []
     for _ in range(n_batches):
         starts = torch.randint(0, max_start, (batch_size,))
-        x = torch.stack([data[s : s + seq_len] for s in starts])
-        y = torch.stack([data[s + 1 : s + seq_len + 1] for s in starts])
-        batches.append((x, y))
+        batches.append(torch.stack([data[s : s + seq_len] for s in starts]))
     return batches
 
 
@@ -84,16 +82,17 @@ def eval_perplexity(
     n_batches: int,
     device: torch.device,
 ) -> dict:
+    """PPL via labels=input_ids (shift causal padrão HuggingFace)."""
     model.eval()
     batches = make_batches(data, seq_len, batch_size, n_batches)
     losses = []
     tokens = 0
     t0 = time.time()
-    for x, y in batches:
-        x, y = x.to(device), y.to(device)
-        out = model(x, labels=y)
+    for x in batches:
+        x = x.to(device)
+        out = model(x, labels=x)
         losses.append(out.loss.item())
-        tokens += y.numel()
+        tokens += x.numel()
     wall = time.time() - t0
     mean_loss = sum(losses) / len(losses)
     return {
@@ -143,9 +142,8 @@ def train_from_scratch(
         max_start = len(train_data) - cfg.seq_len - 1
         starts = torch.randint(0, max_start, (cfg.batch_size,))
         x = torch.stack([train_data[s : s + cfg.seq_len] for s in starts]).to(device)
-        y = torch.stack([train_data[s + 1 : s + cfg.seq_len + 1] for s in starts]).to(device)
         opt.zero_grad(set_to_none=True)
-        out = model(x, labels=y)
+        out = model(x, labels=x)
         loss = out.loss
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
