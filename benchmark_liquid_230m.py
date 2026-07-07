@@ -63,12 +63,20 @@ def tokenize_corpus(tokenizer, texts: list[str], max_tokens: int | None = None) 
     return ids
 
 
-def make_batches(data: torch.Tensor, seq_len: int, batch_size: int, n_batches: int) -> list[torch.Tensor]:
-    max_start = len(data) - seq_len - 1
+def chunk_with_bos(data: torch.Tensor, start: int, seq_len: int, bos_id: int) -> torch.Tensor:
+    """Chunk causal com BOS no início (protocolo padrão LFM2/HF)."""
+    body = data[start : start + seq_len - 1]
+    return torch.cat([torch.tensor([bos_id], dtype=data.dtype), body])
+
+
+def make_batches(
+    data: torch.Tensor, seq_len: int, batch_size: int, n_batches: int, bos_id: int
+) -> list[torch.Tensor]:
+    max_start = len(data) - seq_len
     batches: list[torch.Tensor] = []
     for _ in range(n_batches):
-        starts = torch.randint(0, max_start, (batch_size,))
-        batches.append(torch.stack([data[s : s + seq_len] for s in starts]))
+        starts = torch.randint(0, max(1, max_start), (batch_size,))
+        batches.append(torch.stack([chunk_with_bos(data, int(s), seq_len, bos_id) for s in starts]))
     return batches
 
 
@@ -81,10 +89,11 @@ def eval_perplexity(
     batch_size: int,
     n_batches: int,
     device: torch.device,
+    bos_id: int,
 ) -> dict:
-    """PPL via labels=input_ids (shift causal padrão HuggingFace)."""
+    """PPL via labels=input_ids com BOS (shift causal padrão HuggingFace)."""
     model.eval()
-    batches = make_batches(data, seq_len, batch_size, n_batches)
+    batches = make_batches(data, seq_len, batch_size, n_batches, bos_id)
     losses = []
     tokens = 0
     t0 = time.time()
@@ -130,6 +139,7 @@ def train_from_scratch(
     *,
     cfg: BenchmarkConfig,
     name: str,
+    bos_id: int,
 ) -> dict:
     device = torch.device(cfg.device)
     model = model.to(device)
@@ -139,9 +149,9 @@ def train_from_scratch(
     t0 = time.time()
     train_losses: list[float] = []
     for step in range(1, cfg.train_steps + 1):
-        max_start = len(train_data) - cfg.seq_len - 1
-        starts = torch.randint(0, max_start, (cfg.batch_size,))
-        x = torch.stack([train_data[s : s + cfg.seq_len] for s in starts]).to(device)
+        max_start = len(train_data) - cfg.seq_len
+        starts = torch.randint(0, max(1, max_start), (cfg.batch_size,))
+        x = torch.stack([chunk_with_bos(train_data, int(s), cfg.seq_len, bos_id) for s in starts]).to(device)
         opt.zero_grad(set_to_none=True)
         out = model(x, labels=x)
         loss = out.loss
@@ -159,6 +169,7 @@ def train_from_scratch(
         batch_size=cfg.batch_size,
         n_batches=cfg.eval_batches,
         device=device,
+        bos_id=bos_id,
     )
     return {
         "name": name,
@@ -187,12 +198,15 @@ def run_benchmark(cfg: BenchmarkConfig) -> dict:
 
     print("Carregando tokenizer e WikiText-2...")
     tokenizer = AutoTokenizer.from_pretrained(LIQUID_REPO, trust_remote_code=True)
+    bos_id = tokenizer.bos_token_id
+    if bos_id is None:
+        raise RuntimeError("Tokenizer sem bos_token_id")
     train_texts = load_wikitext_split("train")
     val_texts = load_wikitext_split("validation")
     # Limita tokens para caber na VM e terminar em tempo razoável.
     train_ids = tokenize_corpus(tokenizer, train_texts, max_tokens=200_000)
     val_ids = tokenize_corpus(tokenizer, val_texts, max_tokens=80_000)
-    print(f"  train tokens: {len(train_ids):,} | val tokens: {len(val_ids):,}")
+    print(f"  train tokens: {len(train_ids):,} | val tokens: {len(val_ids):,} | bos_id={bos_id}")
 
     liquid_cfg = Lfm2Config.from_pretrained(LIQUID_REPO)
     print(f"  LFM2 config: layers={liquid_cfg.num_hidden_layers}, hidden={liquid_cfg.hidden_size}, layer_types={liquid_cfg.layer_types}")
@@ -205,6 +219,7 @@ def run_benchmark(cfg: BenchmarkConfig) -> dict:
             "train_steps": cfg.train_steps,
             "eval_batches": cfg.eval_batches,
             "device": cfg.device,
+            "bos_prefix": True,
             "note": "Liquid é pré-treinado (28T tokens); ATLAS from-scratch usa mesma arquitetura LFM2.",
         },
         "models": {},
@@ -216,7 +231,13 @@ def run_benchmark(cfg: BenchmarkConfig) -> dict:
     liquid.eval()
     n_liquid = sum(p.numel() for p in liquid.parameters())
     liquid_eval = eval_perplexity(
-        liquid, val_ids, seq_len=cfg.seq_len, batch_size=cfg.batch_size, n_batches=cfg.eval_batches, device=device
+        liquid,
+        val_ids,
+        seq_len=cfg.seq_len,
+        batch_size=cfg.batch_size,
+        n_batches=cfg.eval_batches,
+        device=device,
+        bos_id=bos_id,
     )
     liquid_fwd = benchmark_forward(liquid, cfg.seq_len, device)
     results["models"]["liquid_pretrained"] = {
@@ -238,7 +259,7 @@ def run_benchmark(cfg: BenchmarkConfig) -> dict:
     print("\n=== ATLAS-LM 230M normal (LFM2 hybrid, from scratch) ===")
     atlas_hybrid = Lfm2ForCausalLM(liquid_cfg)
     atlas_hybrid_result = train_from_scratch(
-        atlas_hybrid, train_ids, val_ids, cfg=cfg, name="atlas_lfm2_hybrid_scratch"
+        atlas_hybrid, train_ids, val_ids, cfg=cfg, name="atlas_lfm2_hybrid_scratch", bos_id=bos_id
     )
     atlas_hybrid_result["architecture"] = "LFM2 hybrid (idêntico ao Liquid)"
     atlas_hybrid_result["pretrained"] = False
@@ -257,7 +278,7 @@ def run_benchmark(cfg: BenchmarkConfig) -> dict:
     atlas_pure = Lfm2ForCausalLM(pure_cfg)
     n_pure = sum(p.numel() for p in atlas_pure.parameters())
     atlas_pure_result = train_from_scratch(
-        atlas_pure, train_ids, val_ids, cfg=cfg, name="atlas_lfm2_pure_attn_scratch"
+        atlas_pure, train_ids, val_ids, cfg=cfg, name="atlas_lfm2_pure_attn_scratch", bos_id=bos_id
     )
     atlas_pure_result["architecture"] = "LFM2 100% full_attention"
     atlas_pure_result["pretrained"] = False
