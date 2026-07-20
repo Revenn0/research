@@ -1,1 +1,25 @@
-python3: can't open file '/workspace/atlas_k/experiments/l1b_kare_src.py': [Errno 2] No such file or directory
+{"mixer": "attn", "seed": 0, "accuracy": 0.20208333333333334, "params": 102528, "wall_clock_s": 4.55615758895874, "steps": 600, "status": "ok"}
+{"mixer": "attn", "seed": 1, "accuracy": 0.18411458333333333, "params": 102528, "wall_clock_s": 4.74970269203186, "steps": 600, "status": "ok"}
+{"mixer": "attn", "seed": 2, "accuracy": 0.194921875, "params": 102528, "wall_clock_s": 4.560530424118042, "steps": 600, "status": "ok"}
+{"mixer": "gated_delta", "seed": 0, "accuracy": 0.1625, "params": 110720, "wall_clock_s": 18.8410861492157, "steps": 600, "status": "ok"}
+{"mixer": "gated_delta", "seed": 1, "accuracy": 0.8279947916666667, "params": 110720, "wall_clock_s": 18.696973085403442, "steps": 600, "status": "ok"}
+{"mixer": "gated_delta", "seed": 2, "accuracy": 0.17122395833333334, "params": 110720, "wall_clock_s": 18.883959531784058, "steps": 600, "status": "ok"}
+{"mixer": "gdn2", "seed": 0, "accuracy": 0.1734375, "params": 118912, "wall_clock_s": 19.69867491722107, "steps": 600, "status": "ok"}
+{"mixer": "gdn2", "seed": 1, "accuracy": 0.15716145833333334, "params": 118912, "wall_clock_s": 19.613009452819824, "steps": 600, "status": "ok"}
+{"mixer": "gdn2", "seed": 2, "accuracy": 0.17447916666666666, "params": 118912, "wall_clock_s": 19.904723167419434, "steps": 600, "status": "ok"}
+{"mixer": "kare", "seed": 0, "accuracy": 0.2078125, "params": 151682, "wall_clock_s": 33.86893606185913, "steps": 600, "status": "ok"}
+{"mixer": "kare", "seed": 1, "accuracy": 0.198828125, "params": 151682, "wall_clock_s": 32.518380641937256, "steps": 600, "status": "ok"}
+{"mixer": "kare", "seed": 2, "accuracy": 0.19153645833333333, "params": 151682, "wall_clock_s": 33.43052959442139, "steps": 600, "status": "ok"}
+{"mixer": "kare_no_echo", "seed": 0, "accuracy": 0.15768229166666667, "params": 151680, "wall_clock_s": 32.75172758102417, "steps": 600, "status": "ok"}
+{"mixer": "kare_no_echo", "seed": 1, "accuracy": 0.16744791666666667, "params": 151680, "wall_clock_s": 33.94095587730408, "steps": 600, "status": "ok"}
+{"mixer": "kare_no_echo", "seed": 2, "accuracy": 0.171875, "params": 151680, "wall_clock_s": 33.254003286361694, "steps": 600, "status": "ok"}
+{"seed": 0, "eff_bits": 3.484375, "ceil_bits": 4, "src": {"mse": 0.14214947819709778, "kl": 3.3196258544921875}, "gptq_ceil": {"mse": 0.05940030515193939, "kl": 0.5638180375099182}, "gptq_base": {"mse": 0.18987438082695007, "kl": 3.1272735595703125}, "rtn_ceil": {"mse": 0.04924072325229645, "kl": 1.8731038570404053}}
+{"seed": 1, "eff_bits": 3.484375, "ceil_bits": 4, "src": {"mse": 0.1475355327129364, "kl": 2.54801082611084}, "gptq_ceil": {"mse": 0.0594363808631897, "kl": 0.5935684442520142}, "gptq_base": {"mse": 0.19606183469295502, "kl": 3.137864112854004}, "rtn_ceil": {"mse": 0.05012333765625954, "kl": 1.6076934337615967}}
+{"seed": 2, "eff_bits": 3.484375, "ceil_bits": 4, "src": {"mse": 0.1484668254852295, "kl": 2.723005533218384}, "gptq_ceil": {"mse": 0.05968809500336647, "kl": 0.5521530508995056}, "gptq_base": {"mse": 0.19782598316669464, "kl": 2.6761655807495117}, "rtn_ceil": {"mse": 0.048760298639535904, "kl": 1.4072948694229126}}
+{"seed": 3, "eff_bits": 3.484375, "ceil_bits": 4, "src": {"mse": 0.15251514315605164, "kl": 2.267592668533325}, "gptq_ceil": {"mse": 0.06167391687631607, "kl": 0.7184013724327087}, "gptq_base": {"mse": 0.2031313180923462, "kl": 2.789973497390747}, "rtn_ceil": {"mse": 0.0502273291349411, "kl": 1.7901966571807861}}
+{"seed": 4, "eff_bits": 3.484375, "ceil_bits": 4, "src": {"mse": 0.14794328808784485, "kl": 3.336878538131714}, "gptq_ceil": {"mse": 0.06139291822910309, "kl": 0.5487951040267944}, "gptq_base": {"mse": 0.19565171003341675, "kl": 3.7709922790527344}, "rtn_ceil": {"mse": 0.04477030038833618, "kl": 1.7528433799743652}}
+=== L1b SUMMARY ===
+{
+  "kare": "FAIL_L1",
+  "src": "FAIL_L1"
+}
