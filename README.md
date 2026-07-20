@@ -1,4 +1,5 @@
-# 0111
+# research
 
+ATLAS-K autonomous frontier research workspace.
 
-Verificação Browser Use giveaway — Victor Junger
+See `atlas_k/reports/CHECKPOINT_REPORT.md` for the current integrity checkpoint (Discovery Gate not passed).
