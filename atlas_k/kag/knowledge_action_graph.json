@@ -1,0 +1,62 @@
+{
+  "version": "0.1.0",
+  "created_utc": "2026-07-20T14:24:00Z",
+  "sources": [
+    {
+      "id": "agents-a1",
+      "title": "Scaling the Horizon, Not the Parameters",
+      "arxiv": "2606.30616",
+      "hf": "InternScience/Agents-A1",
+      "mechanism": "Three-stage agent training: full-domain SFT → domain teachers → multi-teacher domain-routed on-policy distillation with Salient Vocabulary Alignment (SVA). SVA = truncated reverse KL on teacher top-k renormalized support. Domain-normalized loss averages within domain then across domains. KAG = (C,A,O,V) process-level supervision tuples (s,a,o,v).",
+      "why_it_works": "Authors claim process-level horizon scaling + avoiding cross-domain gradient conflict via hard teacher routing and domain-normalized aggregation. Plausible for heterogeneous agent skills; SVA addresses sampled-token OPD under-constraining nearby alternatives.",
+      "limitation": "Infrastructure-heavy; distillation assumes strong domain teachers; SVA does not constrain student mass outside teacher support; agent recipe not an architecture/quantization advance per se.",
+      "unexplored_variables": [
+        "student-selected salient support instead of teacher-selected",
+        "asymmetric k per domain / per token entropy",
+        "apply salient-support truncation idea to attention softmax or to optimizer subspace",
+        "compose SVA with Muon-style spectral geometry on student updates",
+        "salient residual packing of discarded probability mass outside S^(k)"
+      ]
+    },
+    {
+      "id": "gated-deltanet-2",
+      "title": "Gated DeltaNet-2: Decoupling Erase and Write in Linear Attention",
+      "arxiv": "2605.22791",
+      "mechanism": "Linear recurrent state S_t with channel-wise decay α_t, erase gate b_t (key-side), write gate w_t (value-side). Delta-rule edit: erase current association before writing. Generalizes Gated DeltaNet and KDA.",
+      "why_it_works": "Erase and write are different geometric operations on the state; tying them to one scalar β_t forces suboptimal simultaneous forget/commit. Ablations claim erase gate accounts for most gain.",
+      "limitation": "Fixed-size state still compresses unbounded history; associative recall remains weaker than softmax attention; channel-wise gates add parameters; erase destroys information irreversibly.",
+      "unexplored_variables": [
+        "echo/residual buffer that stores erased content at lower rank for later recovery",
+        "conflict-aware erase: modulate b_t by predicted key-collision energy",
+        "asymmetric key/value state ranks",
+        "orthogonalize erase directions before write (Muon geometry on state edit)",
+        "signed sparse residual of erased associations at 1-2 bits"
+      ]
+    },
+    {
+      "id": "spinquant-quarot-kronq",
+      "title": "Rotation and Hessian-aware PTQ (SpinQuant/QuaRot/KronQ)",
+      "mechanism": "Orthogonal/Hadamard rotations redistribute outliers; GPTQ/AWQ compensate weights; KronQ uses Kronecker-factored Hessian for sensitivity and mixed precision.",
+      "why_it_works": "Outliers dominate quantization error; rotations make coordinates more Gaussian; Hessian-aware bit allocation spends bits where loss curvature is high.",
+      "limitation": "Rotation search cost; residual quantization error after n-bit grid is structured (low-rank + sparse) but usually discarded or handled only via GPTQ compensation; mixed-precision metadata overhead.",
+      "unexplored_variables": [
+        "explicit spectral residual packing of W-Q(W) via top-r SVD at matched total bit budget",
+        "sign-consistent residual codebook on largest-magnitude reconstruction errors",
+        "combine learned rotation with spectral residual instead of only finer grid bits",
+        "salient-column residual: store residuals only for top-Hessian columns"
+      ]
+    },
+    {
+      "id": "muon-family",
+      "title": "Muon / NorMuon / AMUSE optimizers",
+      "mechanism": "Orthogonalize momentum matrix via Newton-Schulz; treat 2D params as matrices; often AdamW for vectors/embeddings. AMUSE blends Schedule-Free averaging with Muon.",
+      "why_it_works": "Spectral-norm steepest descent / Stiefel-like geometry accelerates progress along flat bulk directions; weight decay + update RMS scaling needed for large models.",
+      "limitation": "Full-matrix orthogonalization cost; amplifies valley-wall noise (AMUSE); not always best for all parameter types; Newton-Schulz iterations add wall-clock.",
+      "unexplored_variables": [
+        "salient-subspace Muon: orthogonalize only top-k singular subspace of momentum, Adam-like on complement",
+        "domain-normalized multi-task Muon updates (Agents-A1 style aggregation)",
+        "erase-write gated preconditioning for linear-attention state params"
+      ]
+    }
+  ]
+}

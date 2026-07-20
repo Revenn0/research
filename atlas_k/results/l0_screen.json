@@ -1,0 +1,79 @@
+{
+  "promoted": [
+    {
+      "id": "H-ARCH-REM",
+      "domain": "architecture",
+      "novel": true,
+      "note": "echo buffer of erased delta-rule content",
+      "decision": "PROMOTE_L1"
+    },
+    {
+      "id": "H-QUANT-SRP",
+      "domain": "quantization",
+      "novel": true,
+      "note": "spectral residual packing at matched bit budget",
+      "decision": "PROMOTE_L1"
+    },
+    {
+      "id": "H-OPT-SSM",
+      "domain": "training",
+      "novel": true,
+      "note": "salient-subspace Muon",
+      "decision": "PROMOTE_L1"
+    }
+  ],
+  "killed": [
+    {
+      "id": "H-ARCH-GATEBIAS",
+      "domain": "architecture",
+      "novel": false,
+      "note": "gate bias half-life = hyperparam of GDN",
+      "decision": "KILL_L0_reducible"
+    },
+    {
+      "id": "H-QNT-ROTSIDE",
+      "domain": "quantization",
+      "novel": false,
+      "note": "rotation side choice explored in SpinQuant/QuaRot family",
+      "decision": "KILL_L0_reducible"
+    },
+    {
+      "id": "H-OPT-NSSTEPS",
+      "domain": "training",
+      "novel": false,
+      "note": "Newton-Schulz step count tuning",
+      "decision": "KILL_L0_reducible"
+    }
+  ],
+  "held": [
+    {
+      "id": "H-ARCH-CONFLICT-ERASE",
+      "domain": "architecture",
+      "novel": true,
+      "note": "modulate erase by key-collision energy",
+      "decision": "HOLD_queue"
+    },
+    {
+      "id": "H-TRAIN-SVA-STUDENT-SUPPORT",
+      "domain": "training",
+      "novel": true,
+      "note": "student-selected salient support for OPD",
+      "decision": "HOLD_needs_teacher_infra"
+    },
+    {
+      "id": "H-QNT-SIGN-RESIDUAL",
+      "domain": "quantization",
+      "novel": true,
+      "note": "sign-consistent sparse residual codebook",
+      "decision": "HOLD_queue"
+    },
+    {
+      "id": "H-ARCH-ASYM-STATE-RANK",
+      "domain": "architecture",
+      "novel": true,
+      "note": "asymmetric key/value state ranks in delta rule",
+      "decision": "HOLD_queue"
+    }
+  ],
+  "n": 10
+}
