@@ -1,0 +1,7 @@
+[2026-07-30T14:45:42Z] START C-MINI-LADDER-v1-A0-s1 device=cpu model=HuggingFaceTB/SmolLM2-135M
+[2026-07-30T14:45:43Z] loading tokenizer/model...
+[2026-07-30T14:45:44Z] bpw_effective_est=5.8382 dense_frac=0.7893
+[2026-07-30T14:45:44Z] applying arm A0...
+[2026-07-30T14:45:44Z] quantized modules=210 rot=False
+[2026-07-30T14:45:45Z] eval corpus=hf:Salesforce/wikitext/wikitext-2-raw-v1/test hash=c5b5caea5bd655cb chunks=64 raw_tokens=16384
+[2026-07-30T14:45:54Z] DONE ppl=591.992432 n_tokens=16320 wall_s=8.90 job_wall_s=12.72

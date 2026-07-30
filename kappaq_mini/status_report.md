@@ -1,12 +1,12 @@
 # Status report — C-MINI-LADDER-v1
 
-**Updated:** 2026-07-30T14:45:00Z
+**Updated:** 2026-07-30T14:48:30Z
 
 | Phase | Status |
 | --- | --- |
-| A Setup | IN PROGRESS |
-| B Main runs | PENDING |
-| C Analysis | PENDING |
-| D Report | PENDING |
+| A Setup | DONE |
+| B Main runs | DONE |
+| C Analysis | DONE |
+| D Report | DONE |
 
-Hardware: CPU only → model locked to `HuggingFaceTB/SmolLM2-135M`.
+Verdict: **LADDER_SIGNAL** | Falsifier: **PASS**

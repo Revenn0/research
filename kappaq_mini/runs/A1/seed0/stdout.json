@@ -1,0 +1,51 @@
+{
+  "id": "C-MINI-LADDER-v1-A1-s0",
+  "phase": "run",
+  "timestamp_utc": "2026-07-30T14:46:09Z",
+  "arm": "A1",
+  "arm_name": "rot+RTN",
+  "seed": 0,
+  "model": "HuggingFaceTB/SmolLM2-135M",
+  "hardware": "cpu",
+  "config": {
+    "bits": 3,
+    "group_size": 128,
+    "rotation": true,
+    "clip": "rtn_maxabs",
+    "n_sequences": 64,
+    "max_length": 256,
+    "symmetric": true,
+    "smoke": false
+  },
+  "bpw_effective_est": 5.838181327692446,
+  "metrics": {
+    "ppl": 1179.9017333984375,
+    "n_tokens": 16320,
+    "wall_s": 8.828751824999983,
+    "job_wall_s": 13.171913129000018,
+    "peak_vram_mb": null,
+    "corpus_source": "hf:Salesforce/wikitext/wikitext-2-raw-v1/test",
+    "corpus_hash": "c5b5caea5bd655cb",
+    "n_sequences": 64,
+    "max_length": 256
+  },
+  "raw_log_path": "runs/A1/seed0/stdout.json",
+  "verdict": "PASS",
+  "notes": "finite_ppl=True",
+  "bpw_detail": {
+    "n_params_total": 134515008.0,
+    "n_params_dense": 106168320.0,
+    "n_params_high": 28346688.0,
+    "n_params_other": 0.0,
+    "n_groups_dense": 829440.0,
+    "bits_dense_nominal": 3.0,
+    "bpw_effective_est": 5.838181327692446,
+    "fraction_dense": 0.7892674696937906
+  },
+  "arm_info_summary": {
+    "n_modules": 210,
+    "method": "rtn",
+    "use_rot": true,
+    "rotation_applied": true
+  }
+}
