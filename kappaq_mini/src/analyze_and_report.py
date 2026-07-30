@@ -218,7 +218,7 @@ A3 vs A0: mean {m3:.6f} vs {m0:.6f}; better={a3_better}; beyond_noise={a3_vs_a0_
 ## 6. bpw accounting
 
 - Nominal: W3 on dense projections (q/k/v/o, gate/up/down)
-- Effective bpw estimate: **{bpw if bpw is not None else "NOT_RUN":.6f}**
+- Effective bpw estimate: **{f'{bpw:.6f}' if bpw is not None else 'NOT_RUN'}**
 - Detail: `{bpw_detail if bpw is not None else {}}`
 - Kept high-precision (16-bit accounting): embeddings, layer norms, lm_head, biases
 - Simulation note: weights remain float tensors; bpw is packing estimate, not kernel-packed storage
@@ -249,10 +249,6 @@ Checks: same n_tokens; rotation flag matches arm; n_modules>0; raw logs present;
 - Row count (all phases): see file
 - Generated: {utc()}
 """
-    # fix f-string issue with conditional format
-    if bpw is None:
-        report = report.replace("**NOT_RUN:.6f**", "**NOT_RUN**")
-
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(report, encoding="utf-8")
 

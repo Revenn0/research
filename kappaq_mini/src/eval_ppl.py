@@ -58,7 +58,9 @@ def build_eval_batches(
     n_sequences: int = 64,
     max_length: int = 256,
 ) -> Tuple[List[torch.Tensor], int]:
-    enc = tokenizer(text, return_tensors="pt", add_special_tokens=False)
+    # Rough char budget to avoid tokenizing the entire corpus / max-length warnings
+    char_budget = max_length * n_sequences * 8 + 4096
+    enc = tokenizer(text[:char_budget], return_tensors="pt", add_special_tokens=False)
     ids = enc["input_ids"][0]
     # drop trailing incomplete chunk for fair fixed token count
     usable = (ids.numel() // max_length) * max_length
