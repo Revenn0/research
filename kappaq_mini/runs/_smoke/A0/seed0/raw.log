@@ -1,0 +1,14 @@
+[2026-07-30T14:43:46Z] START SMOKE-C-MINI-LADDER-v1-A0-s0 device=cpu model=HuggingFaceTB/SmolLM2-135M
+[2026-07-30T14:43:47Z] loading tokenizer/model...
+[2026-07-30T14:43:51Z] bpw_effective_est=16.0000 dense_frac=0.0000
+[2026-07-30T14:43:51Z] applying arm A0...
+[2026-07-30T14:43:51Z] quantized modules=210 rot=False
+[2026-07-30T14:43:52Z] eval corpus=local_fallback:Invalid HF URI 'hf://datasets/wikitext@b08601e04326c79dfdd32d625aee71d232d685c3/.huggingface.yaml'. Repository id must be 'namespace/name', got 'wikitext'. hash=6510bf87f1434989 chunks=2 raw_tokens=256
+[2026-07-30T14:43:52Z] DONE ppl=7245.970215 n_tokens=254 wall_s=0.21 job_wall_s=6.73
+[2026-07-30T14:44:23Z] START SMOKE-C-MINI-LADDER-v1-A0-s0 device=cpu model=HuggingFaceTB/SmolLM2-135M
+[2026-07-30T14:44:25Z] loading tokenizer/model...
+[2026-07-30T14:44:26Z] bpw_effective_est=5.8382 dense_frac=0.7893
+[2026-07-30T14:44:26Z] applying arm A0...
+[2026-07-30T14:44:26Z] quantized modules=210 rot=False
+[2026-07-30T14:44:28Z] eval corpus=hf:Salesforce/wikitext/wikitext-2-raw-v1/test hash=c5b5caea5bd655cb chunks=2 raw_tokens=256
+[2026-07-30T14:44:28Z] DONE ppl=552.642090 n_tokens=254 wall_s=0.17 job_wall_s=4.56
